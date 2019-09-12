@@ -108,7 +108,17 @@ func deltaFetchRecursion(backupName string, folder storage.Folder, dbDataDirecto
 		if err != nil {
 			return err
 		}
-		tracelog.InfoLogger.Printf("%v fetched. Upgrading from LSN %x to LSN %x \n", *(sentinelDto.IncrementFrom), *(sentinelDto.IncrementFromLSN), *(sentinelDto.BackupStartLSN))
+		metadata, err := backup.GetMeta()
+		if err != nil {
+			tracelog.WarningLogger.PrintError(err)
+		} else {
+			tracelog.InfoLogger.Printf(
+				"%v fetched. Upgrading from LSN %x to LSN %x \n",
+				*(sentinelDto.IncrementFrom),
+				*(sentinelDto.IncrementFromLSN),
+				metadata.StartLsn,
+				)
+		}
 	}
 
 	return backup.unwrap(dbDataDirectory, sentinelDto, filesToUnwrap)

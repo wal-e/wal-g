@@ -22,23 +22,13 @@ var BundleTestLocations = []walparser.BlockLocation{
 	*walparser.NewBlockLocation(1, 2, 3, 9),
 }
 
-func TestEmptyBundleQueue(t *testing.T) {
-	internal.InitConfig()
-	internal.Configure()
-
-	bundle := &internal.Bundle{
-		ArchiveDirectory: "",
-		TarSizeThreshold: 100,
-	}
-
+func TestEmptyUploadPoolerQueue(t *testing.T) {
 	uploader := testtools.NewMockUploader(false, false)
 
-	bundle.TarBallMaker = internal.NewStorageTarBallMaker("mockBackup", uploader)
-
-	err := bundle.StartQueue()
+	uploadPooler, err := internal.NewUploadPooler(internal.NewStorageTarBallMaker("mockBackup", uploader), 100, nil)
 	assert.NoError(t, err)
 
-	err = bundle.FinishQueue()
+	err = uploadPooler.FinishQueue()
 	assert.NoError(t, err)
 }
 
@@ -57,40 +47,35 @@ func TestBundleQueueLowConcurrency(t *testing.T) {
 }
 
 func queueTest(t *testing.T) {
-	bundle := &internal.Bundle{
-		ArchiveDirectory: "",
-		TarSizeThreshold: 100,
-	}
 	uploader := testtools.NewMockUploader(false, false)
-	bundle.TarBallMaker = internal.NewStorageTarBallMaker("mockBackup", uploader)
-
 	// For tests there must be at least 3 workers
+	uploadPooler, err := internal.NewUploadPooler(internal.NewStorageTarBallMaker("mockBackup", uploader), 100, nil)
+	assert.NoError(t, err)
 
-	bundle.StartQueue()
-
-	a := bundle.Deque()
+	a := uploadPooler.Deque()
 	go func() {
 		time.Sleep(10 * time.Millisecond)
 		time.Sleep(10 * time.Millisecond)
-		bundle.EnqueueBack(a)
+		err := uploadPooler.CheckSizeAndEnqueueBack(a)
+		assert.NoError(t, err)
 	}()
 
-	c := bundle.Deque()
+	c := uploadPooler.Deque()
 	go func() {
 		time.Sleep(10 * time.Millisecond)
-		bundle.CheckSizeAndEnqueueBack(c)
+		err := uploadPooler.CheckSizeAndEnqueueBack(c)
+		assert.NoError(t, err)
 	}()
 
-	b := bundle.Deque()
+	b := uploadPooler.Deque()
 	go func() {
 		time.Sleep(10 * time.Millisecond)
-		bundle.EnqueueBack(b)
+		err := uploadPooler.CheckSizeAndEnqueueBack(b)
+		assert.NoError(t, err)
 	}()
 
-	err := bundle.FinishQueue()
-	if err != nil {
-		t.Log(err)
-	}
+	err = uploadPooler.FinishQueue()
+	assert.NoError(t, err)
 }
 
 func makeDeltaFile(locations []walparser.BlockLocation) ([]byte, error) {

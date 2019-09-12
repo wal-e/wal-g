@@ -68,7 +68,7 @@ func HandleStreamFetch(backupName string, folder storage.Folder,
 // DownloadAndDecompressStream downloads, decompresses and writes stream to stdout
 func DownloadAndDecompressStream(backup *Backup) error {
 	for _, decompressor := range compression.Decompressors {
-		archiveReader, exists, err := TryDownloadWALFile(backup.BaseBackupFolder, getStreamName(backup.Name, decompressor.FileExtension()))
+		archiveReader, exists, err := TryDownloadWALFile(backup.Folder, getStreamName(backup.Name, decompressor.FileExtension()))
 		if err != nil {
 			return err
 		}

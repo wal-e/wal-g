@@ -332,37 +332,33 @@ func TestWalk(t *testing.T) {
 	data := generateData(t)
 
 	// Bundle and compress files to `compressed`.
+	compressed := filepath.Join(filepath.Dir(data), "compressed")
+	err := os.MkdirAll(compressed, 0766)
+	assert.NoError(t, err)
+
+	uploadPooler, err := internal.NewUploadPooler(&testtools.FileTarBallMaker{
+		Out: compressed,
+	}, int64(10), nil)
+	assert.NoError(t, err)
+
 	bundle := &internal.Bundle{
 		ArchiveDirectory: data,
-		TarSizeThreshold: int64(10),
 		Files:            &sync.Map{},
-	}
-	compressed := filepath.Join(filepath.Dir(data), "compressed")
-	bundle.TarBallMaker = &testtools.FileTarBallMaker{
-		Out: compressed,
-	}
-	err := os.MkdirAll(compressed, 0766)
-	if err != nil {
-		t.Log(err)
+		UploadPooler:     uploadPooler,
 	}
 
-	bundle.StartQueue()
 	fmt.Println("Walking ...")
 	err = filepath.Walk(data, bundle.HandleWalkedFSObject)
-	if err != nil {
-		t.Log(err)
-	}
+	assert.NoError(t, err)
 
-	err = bundle.FinishQueue()
-	if err != nil {
-		t.Log(err)
-	}
+	err = uploadPooler.FinishQueue()
+	assert.NoError(t, err)
 
 	// Test that sentinel exists and is handled correctly.
 	sen := bundle.Sentinel.Info.Name()
 	assert.Equal(t, internal.PgControl, sen)
 
-	err = bundle.UploadPgControl("lz4")
+	err = bundle.UploadPgControl()
 	assert.NoError(t, err)
 
 	// err = bundle.UploadLabelFiles("backup", "table")

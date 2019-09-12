@@ -35,7 +35,7 @@ func GetMarkedBackupMetadataToUpload(
 	baseBackupFolder := folder.GetSubFolder(utility.BaseBackupPath)
 
 	backup := NewBackup(baseBackupFolder, backupName)
-	meta, err := backup.FetchMeta()
+	meta, err := backup.GetMeta()
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +66,7 @@ func getMarkedPermanentBackupMetadata(baseBackupFolder storage.Folder, backupNam
 		return nil, err
 	}
 
-	meta, err := backup.FetchMeta()
+	meta, err := backup.GetMeta()
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +104,7 @@ func getMarkedImpermanentBackupMetadata(folder storage.Folder, backupName string
 	// retrieve current backup meta
 	backup := NewBackup(baseBackupFolder, backupName)
 
-	meta, err := backup.FetchMeta()
+	meta, err := backup.GetMeta()
 	if err != nil {
 		return nil, err
 	}

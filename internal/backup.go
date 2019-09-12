@@ -42,13 +42,14 @@ func (err NoBackupsFoundError) Error() string {
 // Backup contains information about a valid backup
 // generated and uploaded by WAL-G.
 type Backup struct {
-	BaseBackupFolder storage.Folder
-	Name             string
-	SentinelDto      *BackupSentinelDto // used for storage query caching
+	Folder      storage.Folder
+	Name        string
+	SentinelDto *BackupSentinelDto // used for storage query caching
+	Metadata    *ExtendedMetadataDto
 }
 
 func NewBackup(baseBackupFolder storage.Folder, name string) *Backup {
-	return &Backup{baseBackupFolder, name, nil}
+	return &Backup{baseBackupFolder, name, nil, nil}
 }
 
 func (backup *Backup) GetStopSentinelPath() string {
@@ -60,12 +61,12 @@ func (backup *Backup) GetMetadataPath() string {
 }
 
 func (backup *Backup) getTarPartitionFolder() storage.Folder {
-	return backup.BaseBackupFolder.GetSubFolder(backup.Name + TarPartitionFolderName)
+	return backup.Folder.GetSubFolder(backup.Name + TarPartitionFolderName)
 }
 
 // CheckExistence checks that the specified backup exists.
 func (backup *Backup) CheckExistence() (bool, error) {
-	return backup.BaseBackupFolder.Exists(backup.GetStopSentinelPath())
+	return backup.Folder.Exists(backup.GetStopSentinelPath())
 }
 
 func (backup *Backup) GetTarNames() ([]string, error) {
@@ -101,8 +102,7 @@ func (backup *Backup) GetSentinel() (BackupSentinelDto, error) {
 
 // TODO : unit tests
 func (backup *Backup) FetchSentinelData() ([]byte, error) {
-	backupReaderMaker := NewStorageReaderMaker(backup.BaseBackupFolder, backup.GetStopSentinelPath())
-	backupReader, err := backupReaderMaker.Reader()
+	backupReader, err := backup.Folder.ReadObject(backup.GetStopSentinelPath())
 	if err != nil {
 		return make([]byte, 0), err
 	}
@@ -113,10 +113,21 @@ func (backup *Backup) FetchSentinelData() ([]byte, error) {
 	return sentinelDtoData, nil
 }
 
-func (backup *Backup) FetchMeta() (ExtendedMetadataDto, error) {
+func (backup *Backup) GetMeta() (ExtendedMetadataDto, error) {
+	if backup.Metadata != nil {
+		return *backup.Metadata, nil
+	}
+	metadata, err := backup.fetchMeta()
+	if err != nil {
+		return metadata, err
+	}
+	backup.Metadata = &metadata
+	return metadata, nil
+}
+
+func (backup *Backup) fetchMeta() (ExtendedMetadataDto, error) {
 	extendedMetadataDto := ExtendedMetadataDto{}
-	backupReaderMaker := NewStorageReaderMaker(backup.BaseBackupFolder, backup.GetMetadataPath())
-	backupReader, err := backupReaderMaker.Reader()
+	backupReader, err := backup.Folder.ReadObject(backup.GetMetadataPath())
 	if err != nil {
 		return extendedMetadataDto, err
 	}

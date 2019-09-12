@@ -13,7 +13,7 @@ func TestGetBackupByName_Latest(t *testing.T) {
 	folder := testtools.CreateMockStorageFolder()
 	backup, err := internal.GetBackupByName(internal.LatestString, folder)
 	assert.NoError(t, err)
-	assert.Equal(t, folder.GetSubFolder(utility.BaseBackupPath), backup.BaseBackupFolder)
+	assert.Equal(t, folder.GetSubFolder(utility.BaseBackupPath), backup.Folder)
 	assert.Equal(t, "base_000", backup.Name)
 }
 
@@ -29,7 +29,7 @@ func TestGetBackupByName_Exists(t *testing.T) {
 	folder := testtools.CreateMockStorageFolder()
 	backup, err := internal.GetBackupByName("base_123", folder)
 	assert.NoError(t, err)
-	assert.Equal(t, folder.GetSubFolder(utility.BaseBackupPath), backup.BaseBackupFolder)
+	assert.Equal(t, folder.GetSubFolder(utility.BaseBackupPath), backup.Folder)
 	assert.Equal(t, "base_123", backup.Name)
 }
 

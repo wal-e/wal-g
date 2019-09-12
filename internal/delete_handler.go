@@ -251,7 +251,7 @@ func getPermanentObjects(folder storage.Folder) (map[string]bool, map[string]boo
 			tracelog.ErrorLogger.Printf("failed to get backup by name with error %s, ignoring...", err.Error())
 			continue
 		}
-		meta, err := backup.FetchMeta()
+		meta, err := backup.GetMeta()
 		if err != nil {
 			tracelog.ErrorLogger.Printf("failed to fetch backup meta for backup %s with error %s, ignoring...", backupTime.BackupName, err.Error())
 			continue

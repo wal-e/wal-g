@@ -57,7 +57,7 @@ func getBackupDetails(folder storage.Folder, backups []BackupTime) ([]BackupDeta
 		if err != nil {
 			return nil, err
 		} else {
-			metaData, err := backup.FetchMeta()
+			metaData, err := backup.GetMeta()
 			if err != nil {
 				return nil, err
 			}

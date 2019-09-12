@@ -42,10 +42,6 @@
   version = "1.0.0"
 
 [[constraint]]
-  name = "github.com/go-yaml/yaml"
-  version = "2.2.1"
-
-[[constraint]]
   name = "github.com/google/brotli"
   version = "1.0.7"
 
@@ -84,10 +80,6 @@
 [prune]
   go-tests = true
   unused-packages = true
-
-[[constraint]]
-  name = "cloud.google.com/go"
-  version = "0.34.0"
 
 [[constraint]]
   name = "github.com/minio/sio"

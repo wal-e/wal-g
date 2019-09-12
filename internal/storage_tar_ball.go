@@ -26,18 +26,19 @@ type StorageTarBall struct {
 // If a name for the file is not given, default name is of
 // the form `part_....tar.[Compressor file extension]`.
 func (tarBall *StorageTarBall) SetUp(crypter crypto.Crypter, names ...string) {
-	if tarBall.tarWriter == nil {
-		var name string
-		if len(names) > 0 {
-			name = names[0]
-		} else {
-			name = fmt.Sprintf("part_%0.3d.tar.%v", tarBall.partNumber, tarBall.uploader.Compressor.FileExtension())
-		}
-		writeCloser := tarBall.startUpload(name, crypter)
-
-		tarBall.writeCloser = writeCloser
-		tarBall.tarWriter = tar.NewWriter(writeCloser)
+	if tarBall.tarWriter != nil {
+		return
 	}
+	var name string
+	if len(names) > 0 {
+		name = fmt.Sprintf("%v.tar.%v", names[0], tarBall.uploader.Compressor.FileExtension())
+	} else {
+		name = fmt.Sprintf("part_%0.3d.tar.%v", tarBall.partNumber, tarBall.uploader.Compressor.FileExtension())
+	}
+	writeCloser := tarBall.startUpload(name, crypter)
+
+	tarBall.writeCloser = writeCloser
+	tarBall.tarWriter = tar.NewWriter(writeCloser)
 }
 
 // CloseTar closes the tar writer, flushing any unwritten data

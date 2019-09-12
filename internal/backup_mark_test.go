@@ -19,7 +19,9 @@ func TestGetBackupMetadataToUpload_markSeveralBackups(t *testing.T) {
 	backups := backupInfo{
 		"base_000000010000000000000002": {
 			meta: internal.ExtendedMetadataDto{
-				IsPermanent: false,
+				CommonMetadataDto: internal.CommonMetadataDto{
+					IsPermanent: false,
+				},
 			},
 			sentinel: internal.BackupSentinelDto{
 				IncrementFrom: nil,
@@ -27,7 +29,9 @@ func TestGetBackupMetadataToUpload_markSeveralBackups(t *testing.T) {
 		},
 		"base_000000010000000000000004_D_000000010000000000000002": {
 			meta: internal.ExtendedMetadataDto{
-				IsPermanent: false,
+				CommonMetadataDto: internal.CommonMetadataDto{
+					IsPermanent: false,
+				},
 			},
 			sentinel: internal.BackupSentinelDto{
 				IncrementFrom:     func(s string) *string { return &s }("base_000000010000000000000002"),
@@ -38,7 +42,9 @@ func TestGetBackupMetadataToUpload_markSeveralBackups(t *testing.T) {
 		},
 		"base_000000010000000000000006_D_000000010000000000000004": {
 			meta: internal.ExtendedMetadataDto{
-				IsPermanent: false,
+				CommonMetadataDto: internal.CommonMetadataDto{
+					IsPermanent: false,
+				},
 			},
 			sentinel: internal.BackupSentinelDto{
 				IncrementFrom:     func(s string) *string { return &s }("base_000000010000000000000004_D_000000010000000000000002"),
@@ -63,7 +69,9 @@ func TestGetBackupMetadataToUpload_markOneBackup(t *testing.T) {
 	backups := backupInfo{
 		"base_000000010000000000000002": {
 			meta: internal.ExtendedMetadataDto{
-				IsPermanent: true,
+				CommonMetadataDto: internal.CommonMetadataDto{
+					IsPermanent: true,
+				},
 			},
 			sentinel: internal.BackupSentinelDto{
 				IncrementFrom: nil,
@@ -71,7 +79,9 @@ func TestGetBackupMetadataToUpload_markOneBackup(t *testing.T) {
 		},
 		"base_000000010000000000000004_D_000000010000000000000002": {
 			meta: internal.ExtendedMetadataDto{
-				IsPermanent: true,
+				CommonMetadataDto: internal.CommonMetadataDto{
+					IsPermanent: true,
+				},
 			},
 			sentinel: internal.BackupSentinelDto{
 				IncrementFrom:     func(s string) *string { return &s }("base_000000010000000000000002"),
@@ -82,7 +92,9 @@ func TestGetBackupMetadataToUpload_markOneBackup(t *testing.T) {
 		},
 		"base_000000010000000000000006_D_000000010000000000000004": {
 			meta: internal.ExtendedMetadataDto{
-				IsPermanent: false,
+				CommonMetadataDto: internal.CommonMetadataDto{
+					IsPermanent: false,
+				},
 			},
 			sentinel: internal.BackupSentinelDto{
 				IncrementFrom:     func(s string) *string { return &s }("base_000000010000000000000004_D_000000010000000000000002"),
@@ -104,7 +116,9 @@ func TestGetBackupMetadataToUpload_unmarkOneBackupWithIncrementBackups(t *testin
 	backups := backupInfo{
 		"base_000000010000000000000002": {
 			meta: internal.ExtendedMetadataDto{
-				IsPermanent: true,
+				CommonMetadataDto: internal.CommonMetadataDto{
+					IsPermanent: true,
+				},
 			},
 			sentinel: internal.BackupSentinelDto{
 				IncrementFrom: nil,
@@ -112,7 +126,9 @@ func TestGetBackupMetadataToUpload_unmarkOneBackupWithIncrementBackups(t *testin
 		},
 		"base_000000010000000000000004_D_000000010000000000000002": {
 			meta: internal.ExtendedMetadataDto{
-				IsPermanent: false,
+				CommonMetadataDto: internal.CommonMetadataDto{
+					IsPermanent: false,
+				},
 			},
 			sentinel: internal.BackupSentinelDto{
 				IncrementFrom:     func(s string) *string { return &s }("base_000000010000000000000002"),
@@ -123,7 +139,9 @@ func TestGetBackupMetadataToUpload_unmarkOneBackupWithIncrementBackups(t *testin
 		},
 		"base_000000010000000000000006_D_000000010000000000000004": {
 			meta: internal.ExtendedMetadataDto{
-				IsPermanent: false,
+				CommonMetadataDto: internal.CommonMetadataDto{
+					IsPermanent: false,
+				},
 			},
 			sentinel: internal.BackupSentinelDto{
 				IncrementFrom:     func(s string) *string { return &s }("base_000000010000000000000004_D_000000010000000000000002"),
@@ -146,7 +164,9 @@ func TestGetBackupMetadataToUpload_unmarkOneBackupWithoutIncrementBackups(t *tes
 	backups := backupInfo{
 		"base_000000010000000000000002": {
 			meta: internal.ExtendedMetadataDto{
-				IsPermanent: true,
+				CommonMetadataDto: internal.CommonMetadataDto{
+					IsPermanent: true,
+				},
 			},
 			sentinel: internal.BackupSentinelDto{
 				IncrementFrom: nil,
@@ -154,7 +174,9 @@ func TestGetBackupMetadataToUpload_unmarkOneBackupWithoutIncrementBackups(t *tes
 		},
 		"base_000000010000000000000004_D_000000010000000000000002": {
 			meta: internal.ExtendedMetadataDto{
-				IsPermanent: true,
+				CommonMetadataDto: internal.CommonMetadataDto{
+					IsPermanent: true,
+				},
 			},
 			sentinel: internal.BackupSentinelDto{
 				IncrementFrom:     func(s string) *string { return &s }("base_000000010000000000000002"),
@@ -177,7 +199,9 @@ func TestGetBackupMetadataToUpload_tryToMarkAlreadyMarkedBackup(t *testing.T) {
 	backups := backupInfo{
 		"base_000000010000000000000002": {
 			meta: internal.ExtendedMetadataDto{
-				IsPermanent: true,
+				CommonMetadataDto: internal.CommonMetadataDto{
+					IsPermanent: true,
+				},
 			},
 			sentinel: internal.BackupSentinelDto{
 				IncrementFrom: nil,
@@ -195,7 +219,9 @@ func TestGetBackupMetadataToUpload_tryToUnmarkAlreadyUnmarkedBackup(t *testing.T
 	backups := backupInfo{
 		"base_000000010000000000000002": {
 			meta: internal.ExtendedMetadataDto{
-				IsPermanent: false,
+				CommonMetadataDto: internal.CommonMetadataDto{
+					IsPermanent: false,
+				},
 			},
 			sentinel: internal.BackupSentinelDto{
 				IncrementFrom: nil,
@@ -213,7 +239,9 @@ func TestGetBackupMetadataToUpload_tryToUnmarkBackupWithMarkedIncrementBackups(t
 	backups := backupInfo{
 		"base_000000010000000000000002": {
 			meta: internal.ExtendedMetadataDto{
-				IsPermanent: true,
+				CommonMetadataDto: internal.CommonMetadataDto{
+					IsPermanent: true,
+				},
 			},
 			sentinel: internal.BackupSentinelDto{
 				IncrementFrom: nil,
@@ -221,7 +249,9 @@ func TestGetBackupMetadataToUpload_tryToUnmarkBackupWithMarkedIncrementBackups(t
 		},
 		"base_000000010000000000000004_D_000000010000000000000002": {
 			meta: internal.ExtendedMetadataDto{
-				IsPermanent: true,
+				CommonMetadataDto: internal.CommonMetadataDto{
+					IsPermanent: true,
+				},
 			},
 			sentinel: internal.BackupSentinelDto{
 				IncrementFrom:     func(s string) *string { return &s }("base_000000010000000000000002"),

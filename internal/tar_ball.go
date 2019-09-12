@@ -31,5 +31,5 @@ func PackFileTo(tarBall TarBall, fileInfoHeader *tar.Header, fileContent io.Read
 	}
 
 	tarBall.AddSize(fileInfoHeader.Size)
-	return fileSize, err
+	return fileSize, nil
 }

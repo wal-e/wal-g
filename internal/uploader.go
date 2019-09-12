@@ -110,7 +110,7 @@ func (uploader *Uploader) Upload(path string, content io.Reader) error {
 		return nil
 	}
 	uploader.Failed.Store(true)
-	tracelog.ErrorLogger.Printf(tracelog.GetErrorFormatter()+"\n", err)
+	tracelog.ErrorLogger.PrintError(err)
 	return err
 }
 

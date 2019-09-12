@@ -3,7 +3,6 @@ package internal
 import (
 	"archive/tar"
 	"fmt"
-	"github.com/spf13/viper"
 	"io"
 	"os"
 	"path/filepath"
@@ -11,11 +10,9 @@ import (
 	"sync"
 
 	"github.com/RoaringBitmap/roaring"
-	"github.com/jackc/pgx"
 	"github.com/pkg/errors"
 	"github.com/tinsane/storages/storage"
 	"github.com/tinsane/tracelog"
-	"github.com/wal-g/wal-g/internal/crypto"
 	"github.com/wal-g/wal-g/internal/ioextensions"
 	"github.com/wal-g/wal-g/utility"
 )
@@ -61,141 +58,42 @@ func init() {
 // the sentinel.
 type Bundle struct {
 	ArchiveDirectory   string
-	TarSizeThreshold   int64
 	Sentinel           *Sentinel
-	TarBall            TarBall
-	TarBallMaker       TarBallMaker
-	Crypter            crypto.Crypter
 	Timeline           uint32
-	Replica            bool
 	IncrementFromLsn   *uint64
 	IncrementFromFiles BackupFileList
 	DeltaMap           PagedFileDeltaMap
 
-	tarballQueue     chan TarBall
-	uploadQueue      chan TarBall
-	parallelTarballs int
-	maxUploadQueue   int
-	mutex            sync.Mutex
-	started          bool
+	UploadPooler *UploadPooler
 
 	Files *sync.Map
 }
 
 // TODO: use DiskDataFolder
-func NewBundle(archiveDirectory string, crypter crypto.Crypter, incrementFromLsn *uint64, incrementFromFiles BackupFileList) *Bundle {
+func NewBundle(uploadPooler *UploadPooler, archiveDirectory string, incrementFromLsn *uint64, incrementFromFiles BackupFileList, timeline uint32) *Bundle {
 	return &Bundle{
 		ArchiveDirectory:   archiveDirectory,
-		TarSizeThreshold:   viper.GetInt64(TarSizeThresholdSetting),
-		Crypter:            crypter,
 		IncrementFromLsn:   incrementFromLsn,
 		IncrementFromFiles: incrementFromFiles,
 		Files:              &sync.Map{},
+		Timeline:           timeline,
+		UploadPooler:       uploadPooler,
 	}
+}
+
+func (bundle *Bundle) GetFiles() BackupFileList {
+	files := make(BackupFileList)
+	bundle.Files.Range(func(k, v interface{}) bool {
+		key := k.(string)
+		description := v.(BackupFileDescription)
+		files[key] = description
+		return true
+	})
+	return files
 }
 
 func (bundle *Bundle) GetFileRelPath(fileAbsPath string) string {
 	return utility.GetFileRelativePath(fileAbsPath, bundle.ArchiveDirectory)
-}
-
-func (bundle *Bundle) GetFiles() *sync.Map { return bundle.Files }
-
-func (bundle *Bundle) StartQueue() error {
-	if bundle.started {
-		panic("Trying to start already started Queue")
-	}
-	var err error
-	bundle.parallelTarballs, err = GetMaxUploadDiskConcurrency()
-	if err != nil {
-		return err
-	}
-	bundle.maxUploadQueue, err = GetMaxUploadQueue()
-	if err != nil {
-		return err
-	}
-
-	bundle.tarballQueue = make(chan TarBall, bundle.parallelTarballs)
-	bundle.uploadQueue = make(chan TarBall, bundle.parallelTarballs+bundle.maxUploadQueue)
-	for i := 0; i < bundle.parallelTarballs; i++ {
-		bundle.NewTarBall(true)
-		bundle.tarballQueue <- bundle.TarBall
-	}
-	bundle.started = true
-	return nil
-}
-
-func (bundle *Bundle) Deque() TarBall {
-	if !bundle.started {
-		panic("Trying to deque from not started Queue")
-	}
-	return <-bundle.tarballQueue
-}
-
-func (bundle *Bundle) FinishQueue() error {
-	if !bundle.started {
-		panic("Trying to stop not started Queue")
-	}
-	bundle.started = false
-
-	// We have to deque exactly this count of workers
-	for i := 0; i < bundle.parallelTarballs; i++ {
-		tarBall := <-bundle.tarballQueue
-		if tarBall.TarWriter() == nil {
-			// This had written nothing
-			continue
-		}
-		err := tarBall.CloseTar()
-		if err != nil {
-			return errors.Wrap(err, "HandleWalkedFSObject: failed to close tarball")
-		}
-		tarBall.AwaitUploads()
-	}
-
-	// At this point no new tarballs should be put into uploadQueue
-	for len(bundle.uploadQueue) > 0 {
-		select {
-		case otb := <-bundle.uploadQueue:
-			otb.AwaitUploads()
-		default:
-		}
-	}
-
-	return nil
-}
-
-func (bundle *Bundle) EnqueueBack(tarBall TarBall) {
-	bundle.tarballQueue <- tarBall
-}
-
-func (bundle *Bundle) CheckSizeAndEnqueueBack(tarBall TarBall) error {
-	if tarBall.Size() > bundle.TarSizeThreshold {
-		bundle.mutex.Lock()
-		defer bundle.mutex.Unlock()
-
-		err := tarBall.CloseTar()
-		if err != nil {
-			return errors.Wrap(err, "HandleWalkedFSObject: failed to close tarball")
-		}
-
-		bundle.uploadQueue <- tarBall
-		for len(bundle.uploadQueue) > bundle.maxUploadQueue {
-			select {
-			case otb := <-bundle.uploadQueue:
-				otb.AwaitUploads()
-			default:
-			}
-		}
-
-		bundle.NewTarBall(true)
-		tarBall = bundle.TarBall
-	}
-	bundle.tarballQueue <- tarBall
-	return nil
-}
-
-// NewTarBall starts writing new tarball
-func (bundle *Bundle) NewTarBall(dedicatedUploader bool) {
-	bundle.TarBall = bundle.TarBallMaker.Make(dedicatedUploader)
 }
 
 // GetIncrementBaseLsn returns LSN of previous backup
@@ -203,60 +101,6 @@ func (bundle *Bundle) GetIncrementBaseLsn() *uint64 { return bundle.IncrementFro
 
 // GetIncrementBaseFiles returns list of Files from previous backup
 func (bundle *Bundle) GetIncrementBaseFiles() BackupFileList { return bundle.IncrementFromFiles }
-
-// TODO : unit tests
-// checkTimelineChanged compares timelines of pg_backup_start() and pg_backup_stop()
-func (bundle *Bundle) checkTimelineChanged(conn *pgx.Conn) bool {
-	if bundle.Replica {
-		timeline, err := readTimeline(conn)
-		if err != nil {
-			tracelog.ErrorLogger.Printf("Unable to check timeline change. Sentinel for the backup will not be uploaded.")
-			return true
-		}
-
-		// Per discussion in
-		// https://www.postgresql.org/message-id/flat/BF2AD4A8-E7F5-486F-92C8-A6959040DEB6%40yandex-team.ru#BF2AD4A8-E7F5-486F-92C8-A6959040DEB6@yandex-team.ru
-		// Following check is the very pessimistic approach on replica backup invalidation
-		if timeline != bundle.Timeline {
-			tracelog.ErrorLogger.Printf("Timeline has changed since backup start. Sentinel for the backup will not be uploaded.")
-			return true
-		}
-	}
-	return false
-}
-
-// TODO : unit tests
-// StartBackup starts a non-exclusive base backup immediately. When finishing the backup,
-// `backup_label` and `tablespace_map` contents are not immediately written to
-// a file but returned instead. Returns empty string and an error if backup
-// fails.
-func (bundle *Bundle) StartBackup(conn *pgx.Conn, backup string) (backupName string, lsn uint64, version int, dataDir string, err error) {
-	var name, lsnStr string
-	queryRunner, err := NewPgQueryRunner(conn)
-	if err != nil {
-		return "", 0, queryRunner.Version, "", errors.Wrap(err, "StartBackup: Failed to build query runner.")
-	}
-	name, lsnStr, bundle.Replica, dataDir, err = queryRunner.StartBackup(backup)
-
-	if err != nil {
-		return "", 0, queryRunner.Version, "", err
-	}
-	lsn, err = pgx.ParseLSN(lsnStr)
-
-	if bundle.Replica {
-		name, bundle.Timeline, err = getWalFilename(lsn, conn)
-		if err != nil {
-			return "", 0, queryRunner.Version, "", err
-		}
-	} else {
-		bundle.Timeline, err = readTimeline(conn)
-		if err != nil {
-			tracelog.WarningLogger.Printf("Couldn't get current timeline because of error: '%v'\n", err)
-		}
-	}
-	return "base_" + name, lsn, queryRunner.Version, dataDir, nil
-
-}
 
 // TODO : unit tests
 // HandleWalkedFSObject walks files provided by the passed in directory
@@ -323,28 +167,22 @@ func (bundle *Bundle) handleTar(path string, info os.FileInfo) error {
 		if wasInBase && (time.Equal(baseFile.MTime)) {
 			// File was not changed since previous backup
 			tracelog.DebugLogger.Println("Skipped due to unchanged modification time")
-			bundle.GetFiles().Store(fileInfoHeader.Name, BackupFileDescription{IsSkipped: true, IsIncremented: false, MTime: time})
+			bundle.Files.Store(fileInfoHeader.Name, BackupFileDescription{IsSkipped: true, IsIncremented: false, MTime: time})
 			return nil
 		}
 
-		tarBall := bundle.Deque()
-		tarBall.SetUp(bundle.Crypter)
+		tarBall := bundle.UploadPooler.Deque()
 		go func() {
 			// TODO: Refactor this functional mess
 			// And maybe do a better error handling
 			err := bundle.packFileIntoTar(path, info, fileInfoHeader, wasInBase, tarBall)
-			if err != nil {
-				panic(err)
-			}
-			err = bundle.CheckSizeAndEnqueueBack(tarBall)
-			if err != nil {
-				panic(err)
-			}
+			tracelog.ErrorLogger.PanicOnError(err)
+			err = bundle.UploadPooler.CheckSizeAndEnqueueBack(tarBall)
+			tracelog.ErrorLogger.PanicOnError(err)
 		}()
 	} else {
-		tarBall := bundle.Deque()
-		tarBall.SetUp(bundle.Crypter)
-		defer bundle.EnqueueBack(tarBall)
+		tarBall := bundle.UploadPooler.Deque()
+		defer bundle.UploadPooler.EnqueueBack(tarBall)
 		err = tarBall.TarWriter().WriteHeader(fileInfoHeader)
 		if err != nil {
 			return errors.Wrap(err, "handleTar: failed to write header")
@@ -360,14 +198,13 @@ func (bundle *Bundle) handleTar(path string, info os.FileInfo) error {
 // TODO : unit tests
 // UploadPgControl should only be called
 // after the rest of the backup is successfully uploaded to S3.
-func (bundle *Bundle) UploadPgControl(compressorFileExtension string) error {
+func (bundle *Bundle) UploadPgControl() error {
 	fileName := bundle.Sentinel.Info.Name()
 	info := bundle.Sentinel.Info
 	path := bundle.Sentinel.path
 
-	bundle.NewTarBall(false)
-	tarBall := bundle.TarBall
-	tarBall.SetUp(bundle.Crypter, "pg_control.tar."+compressorFileExtension)
+	tarBall := bundle.UploadPooler.tarBallMaker.Make(false)
+	tarBall.SetUp(bundle.UploadPooler.Crypter, "pg_control")
 	tarWriter := tarBall.TarWriter()
 
 	fileInfoHeader, err := tar.FileInfoHeader(info, fileName)
@@ -410,28 +247,9 @@ func (bundle *Bundle) UploadPgControl(compressorFileExtension string) error {
 // TODO : unit tests
 // UploadLabelFiles creates the `backup_label` and `tablespace_map` files by stopping the backup
 // and uploads them to S3.
-func (bundle *Bundle) UploadLabelFiles(conn *pgx.Conn) (uint64, error) {
-	queryRunner, err := NewPgQueryRunner(conn)
-	if err != nil {
-		return 0, errors.Wrap(err, "UploadLabelFiles: Failed to build query runner.")
-	}
-	label, offsetMap, lsnStr, err := queryRunner.StopBackup()
-	if err != nil {
-		return 0, errors.Wrap(err, "UploadLabelFiles: failed to stop backup")
-	}
-
-	lsn, err := pgx.ParseLSN(lsnStr)
-	if err != nil {
-		return 0, errors.Wrap(err, "UploadLabelFiles: failed to parse finish LSN")
-	}
-
-	if queryRunner.Version < 90600 {
-		return lsn, nil
-	}
-
-	bundle.NewTarBall(false)
-	tarBall := bundle.TarBall
-	tarBall.SetUp(bundle.Crypter)
+func (bundle *Bundle) UploadLabelFiles(label, offsetMap string) error {
+	tarBall := bundle.UploadPooler.tarBallMaker.Make(false)
+	tarBall.SetUp(bundle.UploadPooler.Crypter)
 
 	labelHeader := &tar.Header{
 		Name:     BackupLabelFilename,
@@ -440,9 +258,9 @@ func (bundle *Bundle) UploadLabelFiles(conn *pgx.Conn) (uint64, error) {
 		Typeflag: tar.TypeReg,
 	}
 
-	_, err = PackFileTo(tarBall, labelHeader, strings.NewReader(label))
+	_, err := PackFileTo(tarBall, labelHeader, strings.NewReader(label))
 	if err != nil {
-		return 0, errors.Wrapf(err, "UploadLabelFiles: failed to put %s to tar", labelHeader.Name)
+		return errors.Wrapf(err, "UploadLabelFiles: failed to put %s to tar", labelHeader.Name)
 	}
 	tracelog.InfoLogger.Println(labelHeader.Name)
 
@@ -455,16 +273,12 @@ func (bundle *Bundle) UploadLabelFiles(conn *pgx.Conn) (uint64, error) {
 
 	_, err = PackFileTo(tarBall, offsetMapHeader, strings.NewReader(offsetMap))
 	if err != nil {
-		return 0, errors.Wrapf(err, "UploadLabelFiles: failed to put %s to tar", offsetMapHeader.Name)
+		return errors.Wrapf(err, "UploadLabelFiles: failed to put %s to tar", offsetMapHeader.Name)
 	}
 	tracelog.InfoLogger.Println(offsetMapHeader.Name)
 
 	err = tarBall.CloseTar()
-	if err != nil {
-		return 0, errors.Wrap(err, "UploadLabelFiles: failed to close tarball")
-	}
-
-	return lsn, nil
+	return errors.Wrap(err, "UploadLabelFiles: failed to close tarball")
 }
 
 func (bundle *Bundle) getDeltaBitmapFor(filePath string) (*roaring.Bitmap, error) {
@@ -483,6 +297,19 @@ func (bundle *Bundle) DownloadDeltaMap(folder storage.Folder, backupStartLSN uin
 	return nil
 }
 
+func (bundle *Bundle) uploadBackup() error {
+	tracelog.InfoLogger.Println("Walking ...")
+	err := filepath.Walk(bundle.ArchiveDirectory, bundle.HandleWalkedFSObject)
+	if err != nil {
+		return err
+	}
+	err = bundle.UploadPooler.FinishQueue()
+	if err != nil {
+		return err
+	}
+	return bundle.UploadPgControl()
+}
+
 // TODO : unit tests
 func (bundle *Bundle) packFileIntoTar(path string, info os.FileInfo, fileInfoHeader *tar.Header, wasInBase bool, tarBall TarBall) error {
 	incrementBaseLsn := bundle.GetIncrementBaseLsn()
@@ -491,7 +318,7 @@ func (bundle *Bundle) packFileIntoTar(path string, info os.FileInfo, fileInfoHea
 	if isIncremented {
 		bitmap, err := bundle.getDeltaBitmapFor(path)
 		if _, ok := err.(NoBitmapFoundError); ok { // this file has changed after the start of backup, so just skip it
-			bundle.GetFiles().Store(fileInfoHeader.Name, BackupFileDescription{IsSkipped: true, IsIncremented: false, MTime: info.ModTime()})
+			bundle.Files.Store(fileInfoHeader.Name, BackupFileDescription{IsSkipped: true, IsIncremented: false, MTime: info.ModTime()})
 			return nil
 		} else if err != nil {
 			return errors.Wrapf(err, "packFileIntoTar: failed to find corresponding bitmap '%s'\n", path)
@@ -525,7 +352,7 @@ func (bundle *Bundle) packFileIntoTar(path string, info os.FileInfo, fileInfoHea
 	}
 	defer utility.LoggedClose(fileReader, "")
 
-	bundle.GetFiles().Store(fileInfoHeader.Name, BackupFileDescription{IsSkipped: false, IsIncremented: isIncremented, MTime: info.ModTime()})
+	bundle.Files.Store(fileInfoHeader.Name, BackupFileDescription{IsSkipped: false, IsIncremented: isIncremented, MTime: info.ModTime()})
 
 	packedFileSize, err := PackFileTo(tarBall, fileInfoHeader, fileReader)
 	if err != nil {
