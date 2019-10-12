@@ -41,3 +41,16 @@ psql -f /tmp/scripts/amcheck.sql -v "ON_ERROR_STOP=1" postgres
 /tmp/scripts/drop_pg.sh
 rm ${TMP_CONFIG}
 echo "Full backup success!!!!!!"
+
+# Also we test here WAL overwrite prevention as a part of regular backup functionality
+
+export WALG_PREVENT_WAL_OVERWRITE=true
+
+echo test > /tmp/test_file
+
+wal-g wal-push /tmp/test_file test_file
+wal-g wal-push /tmp/test_file test_file
+echo test1 > /tmp/test_file
+! wal-g wal-push /tmp/test_file test_file
+
+echo "Prevent WAL overwrite success!!!!!!"
