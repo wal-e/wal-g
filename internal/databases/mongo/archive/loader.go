@@ -7,7 +7,7 @@ import (
 	"github.com/wal-g/wal-g/utility"
 	"io"
 
-	"github.com/wal-g/storages/storage"
+	"github.com/wal-g/wal-g/storages/storage"
 )
 
 // ErrWaiter

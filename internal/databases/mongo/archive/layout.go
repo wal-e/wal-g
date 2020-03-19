@@ -5,7 +5,7 @@ import (
 
 	"github.com/wal-g/wal-g/internal/databases/mongo/models"
 
-	"github.com/wal-g/storages/storage"
+	"github.com/wal-g/wal-g/storages/storage"
 )
 
 // Sequence represents serial archive route

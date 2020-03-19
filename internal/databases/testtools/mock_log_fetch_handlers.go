@@ -9,7 +9,7 @@ import (
 	time "time"
 
 	gomock "github.com/golang/mock/gomock"
-	storage "github.com/wal-g/storages/storage"
+	storage "github.com/wal-g/wal-g/storages/storage"
 )
 
 // MockLogFetchSettings is a mock of LogFetchSettings interface

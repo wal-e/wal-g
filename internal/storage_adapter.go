@@ -3,12 +3,12 @@ package internal
 import (
 	"strings"
 
-	"github.com/wal-g/storages/azure"
-	"github.com/wal-g/storages/fs"
-	"github.com/wal-g/storages/gcs"
-	"github.com/wal-g/storages/s3"
-	"github.com/wal-g/storages/storage"
-	"github.com/wal-g/storages/swift"
+	"github.com/wal-g/wal-g/storages/azure"
+	"github.com/wal-g/wal-g/storages/fs"
+	"github.com/wal-g/wal-g/storages/gcs"
+	"github.com/wal-g/wal-g/storages/s3"
+	"github.com/wal-g/wal-g/storages/storage"
+	"github.com/wal-g/wal-g/storages/swift"
 )
 
 type StorageAdapter struct {

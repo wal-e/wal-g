@@ -5,7 +5,7 @@ import (
 	"crypto/x509"
 	"database/sql"
 	"fmt"
-	"github.com/wal-g/storages/storage"
+	"github.com/wal-g/wal-g/storages/storage"
 	"io/ioutil"
 	"math"
 	"sort"
