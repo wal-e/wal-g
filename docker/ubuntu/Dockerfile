@@ -20,9 +20,9 @@ RUN apt-get update && \
 ARG use_lzo
 ARG use_brotli
 
-RUN [ -z $use_lzo ] || apt-get install --yes --no-install-recommends --no-install-suggests \
+RUN (([ -z $use_lzo ] || (apt-get update && apt-get install --yes --no-install-recommends --no-install-suggests \
     liblzo2-2 \
-    lzop
+    lzop)))
 
-RUN [ -z $use_brotli ] || apt-get install --yes --no-install-recommends --no-install-suggests \
-    libbrotli1
+RUN (([ -z $use_brotli ] || (apt-get update && apt-get install --yes --no-install-recommends --no-install-suggests \
+    libbrotli1)))
