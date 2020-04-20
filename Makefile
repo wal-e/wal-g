@@ -22,7 +22,7 @@ ifdef USE_LZO
 endif
 
 ifdef USE_BROTLI
-	BUILD_TAGS=$(BUILD_TAGS) brotli
+	BUILD_TAGS:=$(BUILD_TAGS) brotli
 	WALG_COMPRESSION_METHOD:=brotli
 endif
 
