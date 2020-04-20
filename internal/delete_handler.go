@@ -349,7 +349,6 @@ func getPermanentObjects(folder storage.Folder) (map[string]bool, map[string]boo
 	if err != nil {
 		return map[string]bool{}, map[string]bool{}
 	}
-
 	permanentBackups := map[string]bool{}
 	permanentWals := map[string]bool{}
 	for _, backupTime := range backupTimes {

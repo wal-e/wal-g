@@ -11,11 +11,18 @@ RUN apt-get update && \
     git \
     pv \
     htop \
-    nano \
-    liblzo2-2 \
-    lzop \
-    libbrotli1 && \
+    nano && \
     rm -rf /var/lib/apt/lists/* && \
+    pip3 install --upgrade pip && \
     pip3 install git+https://github.com/wal-e/wal-e.git && \
     pip3 install boto
 
+ARG use_lzo
+ARG use_brotli
+
+RUN [ -z $use_lzo ] || apt-get install --yes --no-install-recommends --no-install-suggests \
+    liblzo2-2 \
+    lzop
+
+RUN [ -z $use_brotli ] || apt-get install --yes --no-install-recommends --no-install-suggests \
+    libbrotli1

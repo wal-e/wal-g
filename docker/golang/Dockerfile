@@ -10,7 +10,9 @@ RUN apt-get update && \
 
 COPY submodules/ tmp/
 
-RUN cd tmp/brotli && \
+ARG use_brotli
+
+RUN (([ -z $use_brotli ] || (cd tmp/brotli && \
     mkdir out && cd out && \
     ../configure-cmake --disable-debug && \
-    make && make install
+    make && make install)))

@@ -2,9 +2,13 @@ FROM wal-g/golang:latest as build
 
 WORKDIR /go/src/github.com/wal-g/wal-g
 
-RUN apt-get update && \
+ARG use_lzo
+ARG use_brotli
+ARG build_tags
+
+RUN (([ -z $use_lzo ] || (apt-get update && \
     apt-get install --yes --no-install-recommends --no-install-suggests \
-    liblzo2-dev
+    liblzo2-dev)))
 
 COPY go.mod go.mod
 COPY vendor/ vendor/
@@ -13,12 +17,14 @@ COPY cmd/ cmd/
 COPY main/ main/
 COPY utility/ utility/
 
-RUN sed -i 's|#cgo LDFLAGS: -lbrotli.*|&-static -lbrotlicommon-static -lm|' \
-        vendor/github.com/google/brotli/go/cbrotli/cgo.go && \
-    sed -i 's|\(#cgo LDFLAGS:\) .*|\1 -Wl,-Bstatic -llzo2 -Wl,-Bdynamic|' \
-        vendor/github.com/cyberdelia/lzo/lzo.go && \
-    cd main/pg && \
-    go build -mod vendor -race -o wal-g -tags "brotli lzo" -ldflags "-s -w -X main.BuildDate=`date -u +%Y.%m.%d_%H:%M:%S`"
+RUN [ -z $use_brotli ] || sed -i 's|#cgo LDFLAGS: -lbrotli.*|&-static -lbrotlicommon-static -lm|' \
+        vendor/github.com/google/brotli/go/cbrotli/cgo.go
+
+RUN [ -z $use_lzo ] ||  sed -i 's|\(#cgo LDFLAGS:\) .*|\1 -Wl,-Bstatic -llzo2 -Wl,-Bdynamic|' \
+        vendor/github.com/cyberdelia/lzo/lzo.go 
+
+RUN cd main/pg && \
+    go build -mod vendor -race -o wal-g -tags "$build_tags" -ldflags "-s -w -X main.BuildDate=`date -u +%Y.%m.%d_%H:%M:%S`"
 
 FROM wal-g/pg:latest
 
