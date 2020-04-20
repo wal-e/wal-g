@@ -35,6 +35,7 @@ RUN mkdir -p /home/mongodb /var/log/wal-g/ ${TMP_DIR} && \
 COPY staging/wal-g ${WALG_REPO}/
 WORKDIR ${WALG_REPO}
 
-RUN make link_external_deps
+ENV WALG_COMPRESSION_METHOD brotli
+RUN USE_BROTLI=1 make link_external_deps
 RUN make BUILD_ARGS=-race mongo_build && \
     cp main/mongo/wal-g /usr/bin/wal-g

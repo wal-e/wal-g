@@ -91,7 +91,7 @@ load_docker_common:
 	fi
 
 mysql_integration_test: load_docker_common
-	docker-compose build mysql mysql_tests
+	docker-compose build --buil-arg use_brotli=$(USE_BROTLI) mysql mysql_tests
 	docker-compose up --exit-code-from mysql_tests mysql_tests
 
 mysql_clean:

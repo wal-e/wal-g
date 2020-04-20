@@ -26,3 +26,7 @@ RUN (([ -z $use_lzo ] || (apt-get update && apt-get install --yes --no-install-r
 
 RUN (([ -z $use_brotli ] || (apt-get update && apt-get install --yes --no-install-recommends --no-install-suggests \
     libbrotli1)))
+
+ARG walg_compression_method
+
+ENV WALG_COMPRESSION_METHOD $walg_compression_method
