@@ -42,7 +42,7 @@ pg_build: $(CMD_FILES) $(PKG_FILES)
 install_and_build_pg: install deps pg_build
 
 pg_build_image:
-	docker-compose build --build-arg build_tags=$(BUILD_TAGS) --build-arg use_brotli=$(USE_BROTLI) --build-arg use_libsodium=$(USE_LIBSODIUM) --build-arg use_lzo=$(USE_LZO) --build-arg walg_compression_method=$(WALG_COMPRESSION_METHOD) $(DOCKER_COMMON) pg pg_build_docker_prefix
+	docker-compose build --build-arg build_tags="$(BUILD_TAGS)" --build-arg use_brotli=$(USE_BROTLI) --build-arg use_libsodium=$(USE_LIBSODIUM) --build-arg use_lzo=$(USE_LZO) --build-arg walg_compression_method=$(WALG_COMPRESSION_METHOD) $(DOCKER_COMMON) pg pg_build_docker_prefix
 
 pg_save_image: install_and_build_pg pg_build_image
 	mkdir -p ${CACHE_FOLDER}
