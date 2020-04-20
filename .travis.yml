@@ -26,6 +26,7 @@ jobs:
     - stage: build image
       env:
         - USE_LZO=1
+        - USE_BROTLI=1
       script: make pg_save_image
       workspaces:
         create:
@@ -38,6 +39,7 @@ jobs:
       env:
       - USE_LIBSODIUM=1
       - USE_LZO=1
+      - USE_BROTLI=1
       script: make all_unittests
     - script: make TEST="pg_backup_mark_impermanent_test" pg_integration_test
       workspaces:
