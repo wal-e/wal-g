@@ -28,6 +28,9 @@ func (err CantOverwriteWalFileError) Error() string {
 // TODO : unit tests
 // HandleWALPush is invoked to perform wal-g wal-push
 func HandleWALPush(uploader *WalUploader, walFilePath string) {
+	if !utility.FileExists(walFilePath) {
+		tracelog.ErrorLogger.Printf("walFilePath: %s doesn't exist", walFilePath)
+	}
 	if uploader.ArchiveStatusManager.isWalAlreadyUploaded(walFilePath) {
 		err := uploader.ArchiveStatusManager.unmarkWalFile(walFilePath)
 

@@ -321,3 +321,11 @@ func StartCommandWithStdoutStderr(cmd *exec.Cmd) (io.ReadCloser, *bytes.Buffer, 
 	}
 	return stdout, stderr, err
 }
+
+func FileExists(fileName string) bool {
+	stat, err := os.Stat(fileName)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return !stat.IsDir()
+}
