@@ -12,9 +12,12 @@ COPY cmd/ cmd/
 COPY main/ main/
 COPY utility/ utility/
 
-RUN sed -i 's|#cgo LDFLAGS: -lbrotli.*|&-static -lbrotlicommon-static -lm|' \
-        vendor/github.com/google/brotli/go/cbrotli/cgo.go && \
-    cd main/mysql && \
+ARG use_brotli
+
+RUN [ -z $use_brotli ] || sed -i 's|#cgo LDFLAGS: -lbrotli.*|&-static -lbrotlicommon-static -lm|' \
+        vendor/github.com/google/brotli/go/cbrotli/cgo.go
+
+RUN cd main/mysql && \
     go build -mod vendor -tags brotli -race -o wal-g -ldflags "-s -w -X main.BuildDate=`date -u +%Y.%m.%d_%H:%M:%S`"
 
 FROM wal-g/mysql:latest
