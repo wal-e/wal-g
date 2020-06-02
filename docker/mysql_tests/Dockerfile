@@ -24,4 +24,6 @@ RUN mkdir /root/testtools
 
 COPY docker/mysql_tests/scripts/ /tmp
 
+RUN chmod -R +x /tmp/tests
+
 CMD /tmp/run_integration_tests.sh

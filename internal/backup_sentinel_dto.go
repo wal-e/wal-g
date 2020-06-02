@@ -16,7 +16,7 @@ type BackupSentinelDto struct {
 	Files       BackupFileList      `json:"Files"`
 	TarFileSets map[string][]string `json:"TarFileSets"`
 
-	PgVersion        int     `json:"PgVersion"`
+	PgVersion        int     `json:"PgVersion,omitempty"`
 	BackupFinishLSN  *uint64 `json:"FinishLSN"`
 	SystemIdentifier *uint64 `json:"SystemIdentifier,omitempty"`
 

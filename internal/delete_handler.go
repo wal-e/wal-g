@@ -44,7 +44,7 @@ var StringModifiersDeleteEverything = []string{"FORCE"}
 var MaxTime = time.Unix(1<<63-62135596801, 999999999)
 
 // TODO : unit tests
-func getLatestBackupName(folder storage.Folder) (string, error) {
+func GetLatestBackupName(folder storage.Folder) (string, error) {
 	sortTimes, err := getBackups(folder)
 	if err != nil {
 		return "", err

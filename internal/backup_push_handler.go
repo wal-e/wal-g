@@ -208,7 +208,7 @@ func HandleBackupPush(uploader *WalUploader, archiveDirectory string, isPermanen
 	folder := uploader.UploadingFolder
 	basebackupFolder := folder.GetSubFolder(utility.BaseBackupPath)
 	if maxDeltas > 0 && !isFullBackup {
-		previousBackupName, err = getLatestBackupName(folder)
+		previousBackupName, err = GetLatestBackupName(folder)
 		if err != nil {
 			if _, ok := err.(NoBackupsFoundError); ok {
 				tracelog.InfoLogger.Println("Couldn't find previous backup. Doing full backup.")

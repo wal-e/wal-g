@@ -84,7 +84,7 @@ func GetPgFetcher(dbDataDirectory, fileMask, restoreSpecPath string) func(folder
 
 func GetStreamFetcher(writeCloser io.WriteCloser) func(folder storage.Folder, backup Backup) {
 	return func(folder storage.Folder, backup Backup) {
-		err := downloadAndDecompressStream(&backup, writeCloser)
+		err := DownloadAndDecompressStream(&backup, writeCloser)
 		tracelog.ErrorLogger.FatalfOnError("Failed to fetch backup: %v\n", err)
 	}
 }
@@ -97,7 +97,7 @@ func GetCommandStreamFetcher(cmd *exec.Cmd) func(folder storage.Folder, backup B
 		cmd.Stderr = stderr
 		err = cmd.Start()
 		tracelog.ErrorLogger.FatalfOnError("Failed to start restore command: %v\n", err)
-		err = downloadAndDecompressStream(&backup, stdin)
+		err = DownloadAndDecompressStream(&backup, stdin)
 		cmdErr := cmd.Wait()
 		if cmdErr != nil {
 			tracelog.ErrorLogger.Printf("Restore command output:\n%s", stderr.String())
@@ -122,7 +122,7 @@ func GetBackupByName(backupName, subfolder string, folder storage.Folder) (*Back
 
 	var backup *Backup
 	if backupName == LatestString {
-		latest, err := getLatestBackupName(folder)
+		latest, err := GetLatestBackupName(folder)
 		if err != nil {
 			return nil, err
 		}

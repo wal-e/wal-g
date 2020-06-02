@@ -5,15 +5,16 @@ import (
 	"crypto/x509"
 	"database/sql"
 	"fmt"
-	"github.com/wal-g/storages/storage"
 	"io/ioutil"
 	"math"
+	"os/exec"
 	"path"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/go-sql-driver/mysql"
+	"github.com/wal-g/storages/storage"
 	"github.com/wal-g/tracelog"
 	"github.com/wal-g/wal-g/internal"
 	"github.com/wal-g/wal-g/utility"
@@ -129,6 +130,11 @@ type StreamSentinelDto struct {
 	StartLocalTime time.Time
 }
 
+type BackupSentinelDto struct {
+	internal.BackupSentinelDto
+	StreamSentinelDto
+}
+
 type binlogHandler interface {
 	handleBinlog(binlogPath string) error
 }
@@ -226,4 +232,8 @@ func getLogsCoveringInterval(folder storage.Folder, start time.Time) ([]storage.
 		}
 	}
 	return logsToFetch, nil
+}
+
+func isXtrabackupCmd(cmd *exec.Cmd) bool {
+	return strings.HasPrefix(cmd.Args[2], "xtrabackup") || strings.HasPrefix(cmd.Args[2], "xbstream")
 }

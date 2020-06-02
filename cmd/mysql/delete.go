@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"path"
+	"regexp"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -13,6 +14,8 @@ import (
 )
 
 var confirmed = false
+var patternBackupName = internal.StreamPrefix + "[0-9]{8}T[0-9]{6}Z"
+var regexpBackupName = regexp.MustCompile(patternBackupName)
 
 // deleteCmd represents the delete command
 var deleteCmd = &cobra.Command{
@@ -74,7 +77,9 @@ func init() {
 }
 
 func IsFullBackup(folder storage.Folder, object storage.Object) bool {
-	return true
+	backup := internal.NewBackup(folder.GetSubFolder(utility.BaseBackupPath), getBackupName(object))
+	sentinel, _ := backup.GetSentinel()
+	return !sentinel.IsIncremental()
 }
 
 func GetLessFunc(folder storage.Folder) func(object1, object2 storage.Object) bool {
@@ -119,4 +124,8 @@ func tryFetchBinlogName(folder storage.Folder, object storage.Object) (string, b
 		return "", false
 	}
 	return sentinel.BinLogStart, true
+}
+
+func getBackupName(object storage.Object) string {
+	return regexpBackupName.FindString(object.GetName())
 }
