@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -16,6 +17,7 @@ import (
 	"github.com/wal-g/storages/storage"
 	"github.com/wal-g/tracelog"
 	"github.com/wal-g/wal-g/utility"
+	jsoniter "github.com/json-iterator/go"
 )
 
 type SentinelMarshallingError struct {
@@ -287,12 +289,23 @@ func uploadMetadata(uploader *Uploader, sentinelDto *BackupSentinelDto, backupNa
 func UploadSentinel(uploader UploaderProvider, sentinelDto interface{}, backupName string) error {
 	sentinelName := SentinelNameFromBackup(backupName)
 
-	dtoBody, err := json.Marshal(sentinelDto)
-	if err != nil {
-		return newSentinelMarshallingError(sentinelName, err)
-	}
+	pr, pw := io.Pipe()
 
-	return uploader.Upload(sentinelName, bytes.NewReader(dtoBody))
+	var json = jsoniter.ConfigCompatibleWithStandardLibrary
+	encoder := json.NewEncoder(pw)
+
+	go func(){
+		err :=encoder.Encode(sentinelDto)
+		if err!=nil {
+			panic("TODODODOD")
+		}
+		err = pw.Close()
+		if err!=nil {
+			panic("TODODODOD")
+		}
+	}()
+
+	return uploader.Upload(sentinelName, pr)
 }
 
 func SentinelNameFromBackup(backupName string) string {
