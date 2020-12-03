@@ -12,11 +12,8 @@ import (
 )
 
 var confirmed = false
-var patternLSN = "[0-9A-F]{24}"
-var patternBackupName = fmt.Sprintf("base_%[1]s(_D_%[1]s)?", patternLSN)
-var regexpLSN = regexp.MustCompile(patternLSN)
+var patternBackupName = fmt.Sprintf("base_%[1]s(_D_%[1]s)?", internal.PatternTLILogSegNo)
 var regexpBackupName = regexp.MustCompile(patternBackupName)
-var maxCountOfLSN = 2
 
 // deleteCmd represents the delete command
 var deleteCmd = &cobra.Command{
@@ -79,11 +76,11 @@ func init() {
 
 // TODO: create postgres part and move it there, if it will be needed
 func postgresLess(object1 storage.Object, object2 storage.Object) bool {
-	lsn1, ok := tryFetchLSN(object1)
+	lsn1, ok := internal.TryFetchLogSegNo(object1.GetName())
 	if !ok {
 		return false
 	}
-	lsn2, ok := tryFetchLSN(object2)
+	lsn2, ok := internal.TryFetchLogSegNo(object2.GetName())
 	if !ok {
 		return false
 	}
@@ -94,14 +91,6 @@ func postgresIsFullBackup(folder storage.Folder, object storage.Object) bool {
 	backup := internal.NewBackup(folder.GetSubFolder(utility.BaseBackupPath), fetchBackupName(object))
 	sentinel, _ := backup.GetSentinel()
 	return !sentinel.IsIncremental()
-}
-
-func tryFetchLSN(object storage.Object) (string, bool) {
-	foundLsn := regexpLSN.FindAllString(object.GetName(), maxCountOfLSN)
-	if len(foundLsn) > 0 {
-		return regexpLSN.FindAllString(object.GetName(), maxCountOfLSN)[0], true
-	}
-	return "", false
 }
 
 func fetchBackupName(object storage.Object) string {

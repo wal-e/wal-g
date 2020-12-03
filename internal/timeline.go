@@ -3,12 +3,19 @@ package internal
 import (
 	"fmt"
 	"github.com/wal-g/wal-g/utility"
+	"regexp"
 	"strconv"
 
 	"github.com/jackc/pgx"
 	"github.com/pkg/errors"
 	"github.com/wal-g/tracelog"
 )
+
+const PatternTLILogSegNo = "[0-9A-F]{24}"
+
+var regexpWalFileName = regexp.MustCompile(PatternTLILogSegNo)
+
+const maxCountOfLSN = 2
 
 type BytesPerWalSegmentError struct {
 	error
@@ -123,6 +130,21 @@ func ParseWALFilename(name string) (timelineID uint32, logSegNo uint64, err erro
 
 	logSegNo = logSegNoHi*xLogSegmentsPerXLogId + logSegNoLo
 	return
+}
+
+func TryFetchLogSegNo(objectName string) (uint64, bool) {
+	foundLsn := regexpWalFileName.FindAllString(objectName, maxCountOfLSN)
+	if len(foundLsn) > 0 {
+		// Remove timeline id: Timeline is resetted during pg_upgrade. This still can cause problems
+		// with overlapping WALs, but at least will prevent us from deleting new backups
+		_, logSegNo, err := ParseWALFilename(foundLsn[0])
+
+		if err != nil {
+			return 0, false
+		}
+		return logSegNo, true
+	}
+	return 0, false
 }
 
 func isWalFilename(filename string) bool {
