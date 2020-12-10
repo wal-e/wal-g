@@ -26,6 +26,7 @@ jobs:
     - stage: build image
       env:
         - USE_LZO=1
+        - USE_LIBSODIUM=1
       script: make pg_save_image
       workspaces:
         create:
