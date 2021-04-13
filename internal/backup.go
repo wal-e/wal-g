@@ -184,13 +184,27 @@ func setTablespacePaths(spec TablespaceSpec) error {
 		return fmt.Errorf("Error creating pg_tblspc folder %v\n", err)
 	}
 	for _, location := range spec.tablespaceLocations() {
+		symlinkName := filepath.Join(basePrefix, location.Symlink)
 		err := fs.NewFolder(location.Location, "").EnsureExists()
 		if err != nil {
 			return fmt.Errorf("Error creating folder for tablespace %v\n", err)
 		}
-		err = os.Symlink(location.Location, filepath.Join(basePrefix, location.Symlink))
-		if err != nil {
-			return fmt.Errorf("Error creating tablespace symkink %v\n", err)
+		if FileInfo, err := os.Lstat(symlinkName); err == nil {
+			if FileInfo.Mode()&os.ModeSymlink != os.ModeSymlink {
+				return fmt.Errorf("Error, %v exists, but is not a symlink\n", symlinkName)
+			}
+			symlinkTarget, err := os.Readlink(symlinkName)
+			if err != nil {
+				return fmt.Errorf("Error reading symlink %v\n", err)
+			}
+			if symlinkTarget != location.Location {
+				return fmt.Errorf("Error: Symlink %v points to target %v, instead of %v", symlinkName, symlinkTarget, location.Location)
+			}
+		} else {
+			err = os.Symlink(location.Location, symlinkName)
+			if err != nil {
+				return fmt.Errorf("Error creating tablespace symlink %v\n", err)
+			}
 		}
 	}
 	return nil
