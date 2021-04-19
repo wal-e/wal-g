@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sync/atomic"
 	"time"
 
@@ -328,6 +329,15 @@ func uploadMetadata(uploader *Uploader,
 // TODO : unit tests
 func UploadSentinel(uploader UploaderProvider, sentinelDto interface{}, backupName string) error {
 	sentinelName := SentinelNameFromBackup(backupName)
+
+	// TODO
+	// Marshalling can be memory consuming operation.
+	// Hopefully by this time we had done all the main job and need
+	// to write only sentinel to the store. Currently I did not found
+	// proper JSON lib that can stream constructed JSON to network.
+	// Enventualy we will fix this. For now let's force garbage collection.
+
+	runtime.GC()
 
 	dtoBody, err := json.Marshal(sentinelDto)
 	if err != nil {
