@@ -23,6 +23,7 @@ const (
 	REDIS     = "REDIS"
 	FDB       = "FDB"
 	MONGO     = "MONGO"
+	ROCKSDB   = "ROCKSDB"
 
 	DownloadConcurrencySetting   = "WALG_DOWNLOAD_CONCURRENCY"
 	UploadConcurrencySetting     = "WALG_UPLOAD_CONCURRENCY"
@@ -97,6 +98,8 @@ const (
 	RedisPassword = "WALG_REDIS_PASSWORD"
 
 	GoMaxProcs = "GOMAXPROCS"
+
+	RocksdbBackupEngineDirectory = "WALG_ROCKSDB_BACKUP_ENGINE_DIRECTORY"
 
 	HTTPListen       = "HTTP_LISTEN"
 	HTTPExposePprof  = "HTTP_EXPOSE_PPROF"

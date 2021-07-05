@@ -1,3 +1,6 @@
 [submodule "submodules/brotli"]
 	path = submodules/brotli
 	url = https://github.com/google/brotli.git
+[submodule "submodules/rocksdb"]
+	path = submodules/rocksdb
+	url = https://github.com/facebook/rocksdb.git

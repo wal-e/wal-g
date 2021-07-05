@@ -9,6 +9,7 @@ main/pg/wal-g
 main/mysql/wal-g
 main/redis/wal-g
 main/mongo/wal-g
+main/rocksdb/wal-g
 
 # tests
 test/testdata/00000*
