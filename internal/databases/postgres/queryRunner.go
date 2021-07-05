@@ -174,6 +174,10 @@ func (queryRunner *PgQueryRunner) getCurrentLsn() (lsn string, err error) {
 }
 
 func (queryRunner *PgQueryRunner) getSystemIdentifier() (err error) {
+	if queryRunner.Version < 90600 {
+		tracelog.WarningLogger.Println("GetSystemIdentifier: Unable to get system identifier")
+		return nil
+	}
 	conn := queryRunner.connection
 	err = conn.QueryRow(queryRunner.buildGetSystemIdentifier()).Scan(&queryRunner.SystemIdentifier)
 	return errors.Wrap(err, "System Identifier: getting identifier of DB failed")
