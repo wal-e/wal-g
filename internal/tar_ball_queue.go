@@ -115,6 +115,19 @@ func (tarQueue *TarBallQueue) EnqueueBack(tarBall TarBall) {
 	tarQueue.tarsToFillQueue <- tarBall
 }
 
+func (tarQueue *TarBallQueue) SkipTarBall(tarBall TarBall) error {
+	tarQueue.mutex.Lock()
+	defer tarQueue.mutex.Unlock()
+	err := tarQueue.CloseTarball(tarBall)
+	if err != nil {
+		return errors.Wrap(err, "HandleWalkedFSObject: failed to close tarball")
+	}
+
+	tarQueue.NewTarBall(true)
+	tarQueue.tarsToFillQueue <- tarQueue.LastCreatedTarball
+	return nil
+}
+
 func (tarQueue *TarBallQueue) FinishTarBall(tarBall TarBall) error {
 	tarQueue.mutex.Lock()
 	defer tarQueue.mutex.Unlock()

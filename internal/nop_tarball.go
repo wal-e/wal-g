@@ -44,6 +44,10 @@ func (tarBallMaker *NOPTarBallMaker) Make(inheritState bool) TarBall {
 	}
 }
 
+func (tarBallMaker *NOPTarBallMaker) AddCopiedTarName(tarName string) {
+	panic("AddCopiedTarName is not implemented for NOPTarBallMaker")
+}
+
 func NewNopTarBallMaker() TarBallMaker {
 	size := int64(0)
 	return &NOPTarBallMaker{0, &size}

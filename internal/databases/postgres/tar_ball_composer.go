@@ -6,6 +6,9 @@ import (
 	"os"
 
 	"github.com/jackc/pgx"
+	"github.com/wal-g/storages/storage"
+	"github.com/wal-g/tracelog"
+	"github.com/wal-g/wal-g/internal"
 )
 
 // TarBallComposer is used to compose files into tarballs.
@@ -39,6 +42,7 @@ type TarBallComposerType int
 const (
 	RegularComposer TarBallComposerType = iota + 1
 	RatingComposer
+	CopyComposer
 )
 
 // TarBallComposerMaker is used to make an instance of TarBallComposer
@@ -47,6 +51,7 @@ type TarBallComposerMaker interface {
 }
 
 func NewTarBallComposerMaker(composerType TarBallComposerType, conn *pgx.Conn,
+	folder storage.Folder, newBackupName string,
 	filePackOptions TarBallFilePackerOptions) (TarBallComposerMaker, error) {
 	switch composerType {
 	case RegularComposer:
@@ -57,6 +62,21 @@ func NewTarBallComposerMaker(composerType TarBallComposerType, conn *pgx.Conn,
 			return nil, err
 		}
 		return NewRatingTarBallComposerMaker(relFileStats, filePackOptions)
+	case CopyComposer:
+		previousBackupName, err := internal.GetLatestBackupName(folder)
+		if err != nil {
+			return NewRegularTarBallComposerMaker(filePackOptions), nil
+		}
+		tracelog.ErrorLogger.PanicOnError(err)
+		previousBackup := NewBackup(folder, previousBackupName)
+		prevBackupSentinelDto, err := previousBackup.GetSentinel()
+		tracelog.ErrorLogger.PanicOnError(err)
+		if prevBackupSentinelDto.IncrementFullName != nil {
+			previousBackupName = *prevBackupSentinelDto.IncrementFullName
+			previousBackup = NewBackup(folder, previousBackupName)	
+			previousBackup.GetSentinel()
+		}	
+		return NewCopyTarBallComposerMaker(previousBackup, newBackupName, filePackOptions), nil
 	default:
 		return nil, errors.New("NewTarBallComposerMaker: Unknown TarBallComposerType")
 	}

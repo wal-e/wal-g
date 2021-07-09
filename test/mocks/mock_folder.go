@@ -12,30 +12,44 @@ import (
 	storage "github.com/wal-g/storages/storage"
 )
 
-// MockFolder is a mock of Folder interface
+// MockFolder is a mock of Folder interface.
 type MockFolder struct {
 	ctrl     *gomock.Controller
 	recorder *MockFolderMockRecorder
 }
 
-// MockFolderMockRecorder is the mock recorder for MockFolder
+// MockFolderMockRecorder is the mock recorder for MockFolder.
 type MockFolderMockRecorder struct {
 	mock *MockFolder
 }
 
-// NewMockFolder creates a new mock instance
+// NewMockFolder creates a new mock instance.
 func NewMockFolder(ctrl *gomock.Controller) *MockFolder {
 	mock := &MockFolder{ctrl: ctrl}
 	mock.recorder = &MockFolderMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockFolder) EXPECT() *MockFolderMockRecorder {
 	return m.recorder
 }
 
-// DeleteObjects mocks base method
+// CopyObject mocks base method.
+func (m *MockFolder) CopyObject(arg0, arg1, arg2 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CopyObject", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CopyObject indicates an expected call of CopyObject.
+func (mr *MockFolderMockRecorder) CopyObject(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CopyObject", reflect.TypeOf((*MockFolder)(nil).CopyObject), arg0, arg1, arg2)
+}
+
+// DeleteObjects mocks base method.
 func (m *MockFolder) DeleteObjects(arg0 []string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteObjects", arg0)
@@ -43,13 +57,13 @@ func (m *MockFolder) DeleteObjects(arg0 []string) error {
 	return ret0
 }
 
-// DeleteObjects indicates an expected call of DeleteObjects
+// DeleteObjects indicates an expected call of DeleteObjects.
 func (mr *MockFolderMockRecorder) DeleteObjects(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteObjects", reflect.TypeOf((*MockFolder)(nil).DeleteObjects), arg0)
 }
 
-// Exists mocks base method
+// Exists mocks base method.
 func (m *MockFolder) Exists(arg0 string) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Exists", arg0)
@@ -58,13 +72,13 @@ func (m *MockFolder) Exists(arg0 string) (bool, error) {
 	return ret0, ret1
 }
 
-// Exists indicates an expected call of Exists
+// Exists indicates an expected call of Exists.
 func (mr *MockFolderMockRecorder) Exists(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Exists", reflect.TypeOf((*MockFolder)(nil).Exists), arg0)
 }
 
-// GetPath mocks base method
+// GetPath mocks base method.
 func (m *MockFolder) GetPath() string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetPath")
@@ -72,13 +86,13 @@ func (m *MockFolder) GetPath() string {
 	return ret0
 }
 
-// GetPath indicates an expected call of GetPath
+// GetPath indicates an expected call of GetPath.
 func (mr *MockFolderMockRecorder) GetPath() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPath", reflect.TypeOf((*MockFolder)(nil).GetPath))
 }
 
-// GetSubFolder mocks base method
+// GetSubFolder mocks base method.
 func (m *MockFolder) GetSubFolder(arg0 string) storage.Folder {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSubFolder", arg0)
@@ -86,13 +100,13 @@ func (m *MockFolder) GetSubFolder(arg0 string) storage.Folder {
 	return ret0
 }
 
-// GetSubFolder indicates an expected call of GetSubFolder
+// GetSubFolder indicates an expected call of GetSubFolder.
 func (mr *MockFolderMockRecorder) GetSubFolder(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSubFolder", reflect.TypeOf((*MockFolder)(nil).GetSubFolder), arg0)
 }
 
-// ListFolder mocks base method
+// ListFolder mocks base method.
 func (m *MockFolder) ListFolder() ([]storage.Object, []storage.Folder, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListFolder")
@@ -102,13 +116,13 @@ func (m *MockFolder) ListFolder() ([]storage.Object, []storage.Folder, error) {
 	return ret0, ret1, ret2
 }
 
-// ListFolder indicates an expected call of ListFolder
+// ListFolder indicates an expected call of ListFolder.
 func (mr *MockFolderMockRecorder) ListFolder() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListFolder", reflect.TypeOf((*MockFolder)(nil).ListFolder))
 }
 
-// PutObject mocks base method
+// PutObject mocks base method.
 func (m *MockFolder) PutObject(arg0 string, arg1 io.Reader) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PutObject", arg0, arg1)
@@ -116,13 +130,13 @@ func (m *MockFolder) PutObject(arg0 string, arg1 io.Reader) error {
 	return ret0
 }
 
-// PutObject indicates an expected call of PutObject
+// PutObject indicates an expected call of PutObject.
 func (mr *MockFolderMockRecorder) PutObject(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PutObject", reflect.TypeOf((*MockFolder)(nil).PutObject), arg0, arg1)
 }
 
-// ReadObject mocks base method
+// ReadObject mocks base method.
 func (m *MockFolder) ReadObject(arg0 string) (io.ReadCloser, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ReadObject", arg0)
@@ -131,7 +145,7 @@ func (m *MockFolder) ReadObject(arg0 string) (io.ReadCloser, error) {
 	return ret0, ret1
 }
 
-// ReadObject indicates an expected call of ReadObject
+// ReadObject indicates an expected call of ReadObject.
 func (mr *MockFolderMockRecorder) ReadObject(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadObject", reflect.TypeOf((*MockFolder)(nil).ReadObject), arg0)

@@ -1,0 +1,5 @@
+"WALE_S3_PREFIX": "s3://fullcopycomposerbucket",
+"WALG_DELTA_MAX_STEPS": "6",
+"WALG_PGP_KEY_PATH": "/tmp/PGP_KEY",
+"WALG_TAR_SIZE_THRESHOLD": "10000000",
+"WALG_USE_COPY_COMPOSER": "true"

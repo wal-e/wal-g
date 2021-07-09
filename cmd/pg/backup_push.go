@@ -22,6 +22,7 @@ const (
 	verifyPagesFlag           = "verify"
 	storeAllCorruptBlocksFlag = "store-all-corrupt"
 	useRatingComposerFlag     = "rating-composer"
+	useCopyComposerFlag       = "copy-composer"
 	deltaFromUserDataFlag     = "delta-from-user-data"
 	deltaFromNameFlag         = "delta-from-name"
 	addUserDataFlag           = "add-user-data"
@@ -31,6 +32,7 @@ const (
 	verifyPagesShorthand           = "v"
 	storeAllCorruptBlocksShorthand = "s"
 	useRatingComposerShorthand     = "r"
+	useCopyComposerShorthand       = "c"
 )
 
 var (
@@ -53,6 +55,10 @@ var (
 			useRatingComposer = useRatingComposer || viper.GetBool(internal.UseRatingComposerSetting)
 			if useRatingComposer {
 				tarBallComposerType = postgres.RatingComposer
+			}
+			if useCopyComposer || viper.GetBool(internal.UseCopyComposerSetting) {
+				fullBackup = true
+				tarBallComposerType = postgres.CopyComposer
 			}
 			if deltaFromName == "" {
 				deltaFromName = viper.GetString(internal.DeltaFromNameSetting)
@@ -81,6 +87,7 @@ var (
 	verifyPageChecksums   = false
 	storeAllCorruptBlocks = false
 	useRatingComposer     = false
+	useCopyComposer       = false
 	deltaFromName         = ""
 	deltaFromUserData     = ""
 	userData              = ""
@@ -123,6 +130,8 @@ func init() {
 		false, "Store all corrupt blocks found during page checksum verification")
 	backupPushCmd.Flags().BoolVarP(&useRatingComposer, useRatingComposerFlag, useRatingComposerShorthand,
 		false, "Use rating tar composer (beta)")
+	backupPushCmd.Flags().BoolVarP(&useCopyComposer, useCopyComposerFlag, useCopyComposerShorthand,
+		false, "Use copy tar composer (beta)")
 	backupPushCmd.Flags().StringVar(&deltaFromName, deltaFromNameFlag,
 		"", "Select the backup specified by name as the target for the delta backup")
 	backupPushCmd.Flags().StringVar(&deltaFromUserData, deltaFromUserDataFlag,

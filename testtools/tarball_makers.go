@@ -25,6 +25,10 @@ func (tarBallMaker *FileTarBallMaker) Make(inheritState bool) internal.TarBall {
 	}
 }
 
+func (tarBallMaker *FileTarBallMaker) AddCopiedTarName(tarName string) {
+	panic("AddCopiedTarName is not implemented for FileTarBallMaker")
+}
+
 type BufferTarBallMaker struct {
 	number        int
 	Size          *int64
@@ -38,4 +42,8 @@ func (tarBallMaker *BufferTarBallMaker) Make(dedicatedUploader bool) internal.Ta
 		partSize:   tarBallMaker.Size,
 		underlying: tarBallMaker.BufferToWrite,
 	}
+}
+
+func (tarBallMaker *BufferTarBallMaker) AddCopiedTarName(tarName string) {
+	panic("AddCopiedTarName is not implemented for BufferTarBallMaker")
 }

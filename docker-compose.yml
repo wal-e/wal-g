@@ -30,6 +30,7 @@ services:
     command: >
       -c 'mkdir -p /export/fullbucket
       &&  mkdir -p /export/fullratingcomposerbucket
+      &&  mkdir -p /export/fullcopycomposerbucket
       &&  mkdir -p /export/fullscandeltabucket
       &&  mkdir -p /export/remotebucket
       &&  mkdir -p /export/cryptobucket
@@ -270,6 +271,17 @@ services:
       context: .
     image: wal-g/receive_wal_test
     container_name: wal-g_pg_receive_wal_test
+    depends_on:
+      - s3
+    links:
+      - s3
+
+  pg_full_backup_copy_composer_test:
+    build:  
+      dockerfile: docker/pg_tests/Dockerfile_full_backup_copy_composer_test
+      context: .
+    image: wal-g/full_backup_copy_composer_test
+    container_name: wal-g_pg_full_backup_copy_composer_test
     depends_on:
       - s3
     links:

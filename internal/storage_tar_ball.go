@@ -18,13 +18,14 @@ const TarPartitionFolderName = "/tar_partitions/"
 // StorageTarBall represents a tar file that is
 // going to be uploaded to storage.
 type StorageTarBall struct {
-	backupName  string
-	partNumber  int
-	partSize    *int64
-	writeCloser io.Closer
-	tarWriter   *tar.Writer
-	uploader    *Uploader
-	name        string
+	backupName   string
+	partNumber   int
+	partSize     *int64
+	writeCloser  io.Closer
+	tarWriter    *tar.Writer
+	uploader     *Uploader
+	name         string
+	resolver     *TarCopiesNameResolver
 }
 
 func (tarBall *StorageTarBall) Name() string {
@@ -37,10 +38,18 @@ func (tarBall *StorageTarBall) Name() string {
 // the form `part_....tar.[Compressor file extension]`.
 func (tarBall *StorageTarBall) SetUp(crypter crypto.Crypter, names ...string) {
 	if tarBall.tarWriter == nil {
-		if len(names) > 0 {
-			tarBall.name = names[0]
+		if tarBall.resolver != nil {
+			if len(names) > 0 {
+				tarBall.name = tarBall.resolver.ResolveByName(names[0])
+			} else {
+				tarBall.name = tarBall.resolver.ResolveByPart(tarBall.partNumber, tarBall.uploader.Compressor.FileExtension())
+			}	
 		} else {
-			tarBall.name = fmt.Sprintf("part_%0.3d.tar.%v", tarBall.partNumber, tarBall.uploader.Compressor.FileExtension())
+			if len(names) > 0 {
+				tarBall.name = names[0]
+			} else {
+				tarBall.name = fmt.Sprintf("part_%0.3d.tar.%v", tarBall.partNumber, tarBall.uploader.Compressor.FileExtension())
+			}
 		}
 		writeCloser := tarBall.startUpload(tarBall.name, crypter)
 
