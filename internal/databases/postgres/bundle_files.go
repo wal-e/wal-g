@@ -88,6 +88,24 @@ func (files *StatBundleFiles) GetUnderlyingMap() *sync.Map {
 	return &files.Map
 }
 
+type SimpleBundleFiles struct {
+	sync.Map
+}
+
+func (files *SimpleBundleFiles) AddSkippedFile(tarHeader *tar.Header, fileInfo os.FileInfo) {
+}
+
+func (files *SimpleBundleFiles) AddFile(tarHeader *tar.Header, fileInfo os.FileInfo, isIncremented bool) {
+}
+
+func (files *SimpleBundleFiles) AddFileWithCorruptBlocks(tarHeader *tar.Header, fileInfo os.FileInfo,
+	isIncremented bool, corruptedBlocks []uint32, storeAllBlocks bool) {
+}
+
+func (files *SimpleBundleFiles) GetUnderlyingMap() *sync.Map {
+	return &files.Map
+}
+
 type RelFileStatistics map[walparser.RelFileNode]PgRelationStat
 
 func (relStat *RelFileStatistics) getFileUpdateCount(filePath string) uint64 {

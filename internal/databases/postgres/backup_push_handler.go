@@ -101,6 +101,8 @@ type BackupHandler struct {
 	pgInfo         BackupPgInfo
 }
 
+var isSimpleComposerTarBallType bool
+
 // NewBackupArguments creates a BackupArgument object to hold the arguments from the cmd
 func NewBackupArguments(pgDataDirectory string, backupsFolder string, isPermanent bool, verifyPageChecksums bool,
 	isFullBackup bool, storeAllCorruptBlocks bool, tarBallComposerType TarBallComposerType,
@@ -265,7 +267,7 @@ func (bh *BackupHandler) uploadBackup() TarFileSets {
 	bh.curBackupInfo.uncompressedSize = atomic.LoadInt64(bundle.TarBallQueue.AllTarballsSize)
 	bh.curBackupInfo.compressedSize, err = bh.workers.uploader.UploadedDataSize()
 	tracelog.ErrorLogger.FatalOnError(err)
-	tarFileSets[labelFilesTarBallName] = append(tarFileSets[labelFilesTarBallName], labelFilesList...)
+	bundle.TarBallComposer.AddLabelFiles(&tarFileSets, labelFilesTarBallName, labelFilesList)
 	timelineChanged := bundle.checkTimelineChanged(bh.workers.conn)
 	tracelog.DebugLogger.Printf("Labelfiles tarball name: %s", labelFilesTarBallName)
 	tracelog.DebugLogger.Printf("Number of label files: %d", len(labelFilesList))
@@ -330,6 +332,7 @@ func (bh *BackupHandler) HandleBackupPush() {
 func (bh *BackupHandler) createAndPushRemoteBackup() {
 	var err error
 	uploader := *bh.workers.uploader
+	isSimpleComposerTarBallType = bh.arguments.tarBallComposerType == SimpleComposer
 	uploader.UploadingFolder = uploader.UploadingFolder.GetSubFolder(utility.BaseBackupPath)
 	tracelog.DebugLogger.Printf("Uploading folder: %s", uploader.UploadingFolder)
 

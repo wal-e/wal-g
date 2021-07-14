@@ -269,7 +269,9 @@ func (backup *Backup) GetFilesToUnwrap(fileMask string) (map[string]bool, error)
 	if err != nil {
 		return nil, err
 	}
-	if sentinelDto.Files == nil { // in case of WAL-E of old WAL-G backup
+	// in case of WAL-E of old WAL-G backup -or-
+	// base backup created with WALG_USE_SIMPLE_COMPOSER
+	if sentinelDto.Files == nil || len(sentinelDto.Files) == 0 {
 		return UnwrapAll, nil
 	}
 	filesToUnwrap := make(map[string]bool)
@@ -283,6 +285,7 @@ func (backup *Backup) GetFilesToUnwrap(fileMask string) (map[string]bool, error)
 }
 
 func shouldUnwrapTar(tarName string, sentinelDto BackupSentinelDto, filesToUnwrap map[string]bool) bool {
+	// in case of base backup created with WALG_USE_SIMPLE_COMPOSER
 	if len(sentinelDto.TarFileSets) == 0 {
 		return true
 	}

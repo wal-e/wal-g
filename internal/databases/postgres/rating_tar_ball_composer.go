@@ -145,6 +145,10 @@ func (c *RatingTarBallComposer) AddFile(info *ComposeFileInfo) {
 	c.addFileQueue <- info
 }
 
+func (c *RatingTarBallComposer) AddLabelFiles(tarFileSets *TarFileSets, tarBallName string, labelFiles []string) {
+	(*tarFileSets)[tarBallName] = append((*tarFileSets)[tarBallName], labelFiles...)
+}
+
 func (c *RatingTarBallComposer) AddHeader(fileInfoHeader *tar.Header, info os.FileInfo) error {
 	c.headersToCompose = append(c.headersToCompose, fileInfoHeader)
 	c.bundleFiles.AddFile(fileInfoHeader, info, false)

@@ -146,9 +146,11 @@ func (streamer *TarballStreamer) addFile() (err error) {
 		}
 	}
 	if !streamer.curHeader.FileInfo().IsDir() {
-		filePath := streamer.curHeader.Name
-		filePath = strings.TrimPrefix(filePath, "./")
-		streamer.Files[filePath] = internal.BackupFileDescription{MTime: streamer.curHeader.ModTime}
+		if !isSimpleComposerTarBallType {
+			filePath := streamer.curHeader.Name
+			filePath = strings.TrimPrefix(filePath, "./")
+			streamer.Files[filePath] = internal.BackupFileDescription{MTime: streamer.curHeader.ModTime}
+		}
 		streamer.tarFileReadIndex += streamer.curHeader.Size
 	}
 	return nil
