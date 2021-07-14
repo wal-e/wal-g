@@ -1,0 +1,3 @@
+"WALE_S3_PREFIX": "s3://remotesimplecomposerbucket",
+"WALG_PGP_KEY_PATH": "/tmp/PGP_KEY"
+"WALG_USE_SIMPLE_COMPOSER": "true"

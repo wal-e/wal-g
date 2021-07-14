@@ -11,6 +11,7 @@ import (
 // TarBallComposer is used to compose files into tarballs.
 type TarBallComposer interface {
 	AddFile(info *ComposeFileInfo)
+	AddLabelFiles(tarFileSets *TarFileSets, tarBallName string, labelFiles []string)
 	AddHeader(header *tar.Header, fileInfo os.FileInfo) error
 	SkipFile(tarHeader *tar.Header, fileInfo os.FileInfo)
 	PackTarballs() (TarFileSets, error)
@@ -39,6 +40,7 @@ type TarBallComposerType int
 const (
 	RegularComposer TarBallComposerType = iota + 1
 	RatingComposer
+	SimpleComposer
 )
 
 // TarBallComposerMaker is used to make an instance of TarBallComposer
@@ -57,6 +59,8 @@ func NewTarBallComposerMaker(composerType TarBallComposerType, conn *pgx.Conn,
 			return nil, err
 		}
 		return NewRatingTarBallComposerMaker(relFileStats, filePackOptions)
+	case SimpleComposer:
+		return NewSimpleTarBallComposerMaker(filePackOptions), nil
 	default:
 		return nil, errors.New("NewTarBallComposerMaker: Unknown TarBallComposerType")
 	}

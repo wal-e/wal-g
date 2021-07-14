@@ -232,6 +232,23 @@ To activate this feature, do one of the following:
 wal-g backup-push /path --rating-composer
 ```
 
+#### Simple composer mode
+
+In the simple composer mode, WAL-G does not track metadata of the files backed up. This significantly reduces the memory usage on instances with `> 100k` files.
+
+Limitations or drawbacks in using Simple compose mode is,
+
+* Does not support `WALG_DELTA_MAX_STEPS`, `WALG_DELTA_ORIGIN`, `WALG_USE_REVERSE_UNPACK`, `WALG_SKIP_REDUNDANT_TARS`, `catchup-push`
+
+To activate this feature, do one of the following:
+
+* set the `WALG_USE_SIMPLE_COMPOSER`environment variable
+* add the --simple-composer flag
+
+```bash
+wal-g backup-push /path --simple-composer
+```
+
 #### Create delta from specific backup
 When creating delta backup (`WALG_DELTA_MAX_STEPS` > 0), WAL-G uses the latest backup as the base by default. This behaviour can be changed via following flags:
 
