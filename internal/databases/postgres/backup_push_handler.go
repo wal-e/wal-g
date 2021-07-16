@@ -448,6 +448,7 @@ func getPgServerInfo() (pgInfo BackupPgInfo, err error) {
 	if err != nil {
 		return pgInfo, err
 	}
+	pgInfo.pgDataDirectory = utility.ResolveSymlink(pgInfo.pgDataDirectory);
 	tracelog.DebugLogger.Printf("Datadir: %s", pgInfo.pgDataDirectory)
 
 	err = queryRunner.getVersion()
