@@ -1,0 +1,115 @@
+# -*- mode: makefile -*-. –
+
+GOPATH=$(HOME)/go
+goarch := gccgo_linux_amd64
+
+pkgwal-g := github.com/wal-g/wal-g
+
+pkgdep += "cloud.google.com/go/storage"
+pkgdep += "github.com/DataDog/zstd"
+pkgdep += "github.com/RoaringBitmap/roaring"
+pkgdep += "github.com/aws/aws-sdk-go/aws"
+#pkgdep += "github.com/aws/aws-sdk-go/aws/awserr"
+#pkgdep += "github.com/aws/aws-sdk-go/aws/defaults"
+#pkgdep += "github.com/aws/aws-sdk-go/aws/session"
+#pkgdep += "github.com/aws/aws-sdk-go/service/s3"
+#pkgdep += "github.com/aws/aws-sdk-go/service/s3/s3iface"
+#pkgdep += "github.com/aws/aws-sdk-go/service/s3/s3manager"
+#pkgdep += "github.com/aws/aws-sdk-go/service/s3/s3manager/s3manageriface"
+pkgdep += "github.com/go-yaml/yaml"
+#pkgdep += "github.com/google/brotli/go/cbrotli"
+pkgdep += "github.com/jackc/pgx"
+pkgdep += "github.com/pierrec/lz4"
+pkgdep += "github.com/pkg/errors"
+pkgdep += "github.com/ulikunitz/xz/lzma"
+pkgdep += "golang.org/x/crypto/openpgp"
+pkgdep += "golang.org/x/sync/semaphore"
+pkgdep += "golang.org/x/time/rate"
+pkgdep += "google.golang.org/api/iterator"
+# test target
+pkgdep += "github.com/stretchr/testify/assert"
+
+.PHONY: test wal-g clean distclean
+
+#gccgoflags = -gccgoflags ''
+gccgoflags = -gccgoflags '-static-libgo'
+#gccgoflags = -gccgoflags '-static'
+
+#godebug =
+
+main: test wal-g
+
+depend: \
+$(GOPATH)/src/github.com/golang/protobuf \
+github.com/google/brotli/go/cbrotli $(pkgdep)
+
+$(GOPATH)/src/github.com/golang/protobuf:
+	go get -u github.com/golang/protobuf/{proto,protoc-gen-go}
+
+github.com/google/brotli/go/cbrotli:
+	go get -d $@
+	CGO_LDFLAGS="-L$(GOPATH)/src/github.com/google/brotli/"   \
+CGO_CPPFLAGS="-I$(GOPATH)/src/github.com/google/brotli/c/include" \
+go install  -x  $@
+
+$(pkgdep): $(GOPATH)/src/github.com/golang/protobuf github.com/google/brotli/go/cbrotli
+	go get $@
+
+$(pkgwal-g):
+	go get -d $(pkgwal-g)/internal
+
+TMPDIR := /tmp/wal-g
+
+$(TMPDIR)/release/lib/libbrotlicommon-static.a \
+$(TMPDIR)/release/lib/libbrotlidec-static.a    \
+$(TMPDIR)/release/lib/libbrotlienc-static.a:
+	mkdir -p $(TMPDIR) &&                  \
+cd $(TMPDIR) &&                                \
+$(GOPATH)/src/github.com/google/brotli/configure-cmake --disable-debug --prefix="$(TMPDIR)/release" && \
+cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(TMPDIR)/release . &&                         \
+make && make install
+
+brotli_libs := libbrotlicommon.a  libbrotlidec.a  libbrotlienc.a
+
+$(TMPDIR)/release/lib/libbrotlicommon.a        \
+$(TMPDIR)/release/lib/libbrotlidec.a           \
+$(TMPDIR)/release/lib/libbrotlienc.a:          \
+$(TMPDIR)/release/lib/libbrotlicommon-static.a \
+$(TMPDIR)/release/lib/libbrotlidec-static.a    \
+$(TMPDIR)/release/lib/libbrotlienc-static.a
+	cd $(dir $<) && $(foreach l, $(notdir $^), cp  $l $(subst -static,,$l);)
+	cd $(dir $<) && rm -f *.so
+
+wal-g: depend $(pkgwal-g) $(addprefix $(TMPDIR)/release/lib/,$(brotli_libs))
+	cd $(GOPATH)/src/$(pkgwal-g)/cmd/wal-g &&  \
+CGO_CPPFLAGS="-I$(TMPDIR)/release/include"         \
+GO_LDFLAGS="-L$(TMPDIR)/release/lib"               \
+LIBRARY_PATH="$LIBRARY_PATH:$(TMPDIR)/release/lib" \
+go build $(gccgoflags)
+#	strip --strip-unneeded $(GOPATH)/src/$(pkgwal-g)/cmd/wal-g/wal-g
+
+test: depend $(pkgwal-g) $(addprefix $(TMPDIR)/release/lib/,$(brotli_libs))
+	cd $(GOPATH)/src/$(pkgwal-g)/ &&           \
+CGO_CPPFLAGS="-I$(TMPDIR)/release/include"         \
+GO_LDFLAGS="-L$(TMPDIR)/release/lib"               \
+LIBRARY_PATH="$LIBRARY_PATH:$(TMPDIR)/release/lib" \
+GOCACHE="off"                                      \
+GODEBUG="$(godebug)"                               \
+go test $(gccgoflags) -v ./test ./internal/walparser
+
+wal-g_dirs :=                  \
+cmd/wal-g                      \
+internal/tracelog              \
+internal/walparser             \
+internal/walparser/parsingutil \
+submodules/brotli/go/cbrotli   \
+test                           \
+testtools
+
+clean:
+	test -d $(GOPATH)/src/$(pkgwal-g)/ && \
+$(foreach d, $(wal-g_dirs), cd $(GOPATH)/src/$(pkgwal-g)/$(d) && go clean -i || true;)
+	$(RM) -r $(TMPDIR)/release/
+
+distclean: clean
+	$(RM) -r $(TMPDIR)
