@@ -141,9 +141,10 @@ type StreamSentinelDto struct {
 	StartLocalTime time.Time `json:"StartLocalTime,omitempty"`
 	StopLocalTime  time.Time `json:"StopLocalTime,omitempty"`
 
-	UncompressedSize int64  `json:"UncompressedSize,omitempty"`
-	CompressedSize   int64  `json:"CompressedSize,omitempty"`
-	Hostname         string `json:"Hostname,omitempty"`
+	UncompressedSize int64    `json:"UncompressedSize,omitempty"`
+	CompressedSize   int64    `json:"CompressedSize,omitempty"`
+	Hostname         string   `json:"Hostname,omitempty"`
+	FileNames        []string `json:"FileNames,omitempty"`
 
 	IsPermanent bool        `json:"IsPermanent,omitempty"`
 	UserData    interface{} `json:"UserData,omitempty"`

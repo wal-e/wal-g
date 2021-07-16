@@ -21,6 +21,12 @@ type ArchiveNonExistenceError struct {
 	error
 }
 
+type FileResult struct {
+	readCloser io.ReadCloser
+	exists     bool
+	err        error
+}
+
 func newArchiveNonExistenceError(archiveName string) ArchiveNonExistenceError {
 	return ArchiveNonExistenceError{errors.Errorf("Archive '%s' does not exist.\n", archiveName)}
 }
@@ -62,6 +68,13 @@ func TryDownloadFile(folder storage.Folder, path string) (walFileReader io.ReadC
 		err = nil
 	}
 	return
+}
+
+func TryDownloadFiles(folder storage.Folder, paths []string, filesCh chan FileResult) {
+	for _, path := range paths {
+		reader, exists, err := TryDownloadFile(folder, path)
+		filesCh <- FileResult{reader, exists, err}
+	}
 }
 
 // TODO : unit tests

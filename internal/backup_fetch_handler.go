@@ -3,13 +3,13 @@ package internal
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"os/exec"
 
+	"github.com/pkg/errors"
 	"github.com/wal-g/storages/storage"
 	"github.com/wal-g/tracelog"
 	"github.com/wal-g/wal-g/utility"
-
-	"github.com/pkg/errors"
 )
 
 type BackupNonExistenceError struct {
@@ -24,24 +24,39 @@ func (err BackupNonExistenceError) Error() string {
 	return fmt.Sprintf(tracelog.GetErrorFormatter(), err.error)
 }
 
-func GetCommandStreamFetcher(cmd *exec.Cmd) func(folder storage.Folder, backup Backup) {
-	return func(folder storage.Folder, backup Backup) {
-		stdin, err := cmd.StdinPipe()
-		tracelog.ErrorLogger.FatalfOnError("Failed to fetch backup: %v\n", err)
-		stderr := &bytes.Buffer{}
-		cmd.Stderr = stderr
-		err = cmd.Start()
-		tracelog.ErrorLogger.FatalfOnError("Failed to start restore command: %v\n", err)
-		err = downloadAndDecompressStream(backup, stdin)
-		cmdErr := cmd.Wait()
-		if err != nil || cmdErr != nil {
-			tracelog.ErrorLogger.Printf("Restore command output:\n%s", stderr.String())
-		}
-		if cmdErr != nil {
-			err = cmdErr
-		}
-		tracelog.ErrorLogger.FatalfOnError("Failed to fetch backup: %v\n", err)
+func StreamBackupPartsToStdin(cmd *exec.Cmd, backup Backup) error {
+	return StreamBackupToStdin(cmd, backup, downloadAndDecompressStream)
+}
+
+func StreamFullBackupToStdin(cmd *exec.Cmd, backup Backup, fileNames []string, fetchedFilesCnt int) error {
+	return StreamBackupToStdin(cmd,
+		backup,
+		func(backup Backup, closer io.WriteCloser) error {
+			return downloadAndDecompressStreamParts(backup, closer, fileNames, fetchedFilesCnt)
+		})
+}
+
+func StreamBackupToStdin(cmd *exec.Cmd,
+	backup Backup, backupLoader func(backup1 Backup, closer io.WriteCloser) error) error {
+	stdin, err := cmd.StdinPipe()
+	if err != nil {
+		return err
 	}
+	stderr := &bytes.Buffer{}
+	cmd.Stderr = stderr
+	err = cmd.Start()
+	if err != nil {
+		return err
+	}
+	err = backupLoader(backup, stdin)
+	cmdErr := cmd.Wait()
+	if err != nil || cmdErr != nil {
+		tracelog.ErrorLogger.Printf("Restore command output:\n%s", stderr.String())
+	}
+	if cmdErr != nil {
+		err = cmdErr
+	}
+	return err
 }
 
 // StreamBackupToCommandStdin downloads and decompresses backup stream to cmd stdin.
@@ -67,6 +82,26 @@ func StreamBackupToCommandStdin(cmd *exec.Cmd, backup Backup) error {
 		return fmt.Errorf("command exited with non-zero code: %d", cmd.ProcessState.ExitCode())
 	}
 	return nil
+}
+
+func GetCommandStreamFetcher(cmd *exec.Cmd) func(folder storage.Folder, backup Backup) {
+	return func(folder storage.Folder, backup Backup) {
+		stdin, err := cmd.StdinPipe()
+		tracelog.ErrorLogger.FatalfOnError("Failed to fetch backup: %v\n", err)
+		stderr := &bytes.Buffer{}
+		cmd.Stderr = stderr
+		err = cmd.Start()
+		tracelog.ErrorLogger.FatalfOnError("Failed to start restore command: %v\n", err)
+		err = downloadAndDecompressStream(backup, stdin)
+		cmdErr := cmd.Wait()
+		if err != nil || cmdErr != nil {
+			tracelog.ErrorLogger.Printf("Restore command output:\n%s", stderr.String())
+		}
+		if cmdErr != nil {
+			err = cmdErr
+		}
+		tracelog.ErrorLogger.FatalfOnError("Failed to fetch backup: %v\n", err)
+	}
 }
 
 // TODO : unit tests

@@ -95,6 +95,9 @@ const (
 	MysqlBinlogDstSetting      = "WALG_MYSQL_BINLOG_DST"
 	MysqlBackupPrepareCmd      = "WALG_MYSQL_BACKUP_PREPARE_COMMAND"
 	MysqlTakeBinlogsFromMaster = "WALG_MYSQL_TAKE_BINLOGS_FROM_MASTER"
+	MysqlUsePartialBackupPush  = "WALG_MYSQL_USE_PARTIAL_BACKUP_PUSH"
+	MysqlPartialBackupFileSize = "WALG_MYSQL_PARTIAL_BACKUP_FILE_SIZE"
+	MysqlPrefetchedFilesCount  = "WALG_MYSQL_PREFETCHED_FILES_COUNT"
 
 	RedisPassword = "WALG_REDIS_PASSWORD"
 
@@ -143,6 +146,9 @@ var (
 		StoreAllCorruptBlocksSetting: "false",
 		UseRatingComposerSetting:     "false",
 		MaxDelayedSegmentsCount:      "0",
+		MysqlUsePartialBackupPush:    "false",
+		MysqlPartialBackupFileSize:   "104857600", // 100 << 20
+		MysqlPrefetchedFilesCount:    "2",
 	}
 
 	MongoDefaultSettings = map[string]string{
@@ -318,6 +324,9 @@ var (
 		MysqlBinlogDstSetting:      true,
 		MysqlBackupPrepareCmd:      true,
 		MysqlTakeBinlogsFromMaster: true,
+		MysqlUsePartialBackupPush:  true,
+		MysqlPartialBackupFileSize: true,
+		MysqlPrefetchedFilesCount:  true,
 	}
 
 	RedisAllowedSettings = map[string]bool{

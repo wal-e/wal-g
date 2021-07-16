@@ -3,6 +3,7 @@ package internal
 import (
 	"fmt"
 	"io"
+	"path/filepath"
 	"time"
 
 	"github.com/pkg/errors"
@@ -56,4 +57,31 @@ func downloadAndDecompressStream(backup Backup, writeCloser io.WriteCloser) erro
 		return nil
 	}
 	return newArchiveNonExistenceError(fmt.Sprintf("Archive '%s' does not exist.\n", backup.Name))
+}
+
+func downloadAndDecompressStreamParts(backup Backup, writeCloser io.WriteCloser,
+	fileNames []string, fetchedFilesCnt int) error {
+	defer utility.LoggedClose(writeCloser, "")
+
+	decompressor := compression.FindDecompressor(filepath.Ext(fileNames[0])[1:])
+	if decompressor == nil {
+		return newUnknownCompressionMethodError()
+	}
+	filesCh := make(chan FileResult, fetchedFilesCnt)
+	go TryDownloadFiles(backup.Folder, fileNames, filesCh)
+	for _, fileName := range fileNames {
+		file := <-filesCh
+		if file.err != nil {
+			return file.err
+		}
+		if !file.exists {
+			return newArchiveNonExistenceError(fmt.Sprintf("Archive '%s' does not exist.\n", fileName))
+		}
+		tracelog.DebugLogger.Printf("Found file: %s", fileName)
+		err := DecompressDecryptBytes(&EmptyWriteIgnorer{WriteCloser: writeCloser}, file.readCloser, decompressor)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

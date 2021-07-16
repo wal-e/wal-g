@@ -160,6 +160,16 @@ func GetBackupByName(backupName, subfolder string, folder storage.Folder) (Backu
 	return backup, nil
 }
 
+func SelectBackup(folder storage.Folder,
+	targetBackupSelector BackupSelector) (Backup, error) {
+	backupName, err := targetBackupSelector.Select(folder)
+	if err != nil {
+		return Backup{}, err
+	}
+	tracelog.DebugLogger.Printf("SelectBackup(%s, folder,)\n", backupName)
+	return GetBackupByName(backupName, utility.BaseBackupPath, folder)
+}
+
 // TODO : unit tests
 func UploadSentinel(uploader UploaderProvider, sentinelDto interface{}, backupName string) error {
 	sentinelName := SentinelNameFromBackup(backupName)

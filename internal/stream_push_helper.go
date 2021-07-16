@@ -4,7 +4,9 @@ import (
 	"io"
 	"os"
 	"path"
+	"strconv"
 
+	"github.com/spf13/viper"
 	"github.com/wal-g/tracelog"
 	"github.com/wal-g/wal-g/utility"
 )
@@ -21,6 +23,27 @@ func (uploader *Uploader) PushStream(stream io.Reader) (string, error) {
 	err := uploader.PushStreamToDestination(stream, dstPath)
 
 	return backupName, err
+}
+
+func (uploader *Uploader) PushStreamParts(stream io.Reader) (string, []string, error) {
+	backupName := StreamPrefix + utility.TimeNowCrossPlatformUTC().Format(utility.BackupTimeFormat)
+	var files []string
+	maxFileSize := viper.GetInt64(MysqlPartialBackupFileSize)
+	for i := 1; ; i++ {
+		uncompressedSize := int64(0)
+		dstPath := GetStreamName(backupName+"_"+strconv.Itoa(i), uploader.Compressor.FileExtension())
+		reader := io.LimitReader(stream, maxFileSize)
+		err := uploader.PushStreamToDestination(NewWithSizeReader(reader, &uncompressedSize), dstPath)
+		files = append(files, dstPath)
+		if err != nil {
+			return "", nil, err
+		}
+		if uncompressedSize < maxFileSize {
+			break
+		}
+	}
+
+	return backupName, files, nil
 }
 
 // TODO : unit tests

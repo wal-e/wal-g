@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/spf13/viper"
 	"github.com/wal-g/tracelog"
 	"github.com/wal-g/wal-g/internal"
 	"github.com/wal-g/wal-g/internal/limiters"
@@ -23,7 +24,14 @@ func HandleBackupPush(uploader *internal.Uploader, backupCmd *exec.Cmd, isPerman
 	stdout, stderr, err := utility.StartCommandWithStdoutStderr(backupCmd)
 	tracelog.ErrorLogger.FatalfOnError("failed to start backup create command: %v", err)
 
-	fileName, err := uploader.PushStream(limiters.NewDiskLimitReader(stdout))
+	streamReader := limiters.NewDiskLimitReader(stdout)
+	var fileName string
+	var fileNames []string
+	if viper.GetBool(internal.MysqlUsePartialBackupPush) {
+		fileName, fileNames, err = uploader.PushStreamParts(streamReader)
+	} else {
+		fileName, err = uploader.PushStream(streamReader)
+	}
 	tracelog.ErrorLogger.FatalfOnError("failed to push backup: %v", err)
 
 	err = backupCmd.Wait()
@@ -60,6 +68,7 @@ func HandleBackupPush(uploader *internal.Uploader, backupCmd *exec.Cmd, isPerman
 		UncompressedSize: rawSize,
 		IsPermanent:      isPermanent,
 		UserData:         userData,
+		FileNames:        fileNames,
 	}
 	tracelog.InfoLogger.Printf("Backup sentinel: %s", sentinel.String())
 
